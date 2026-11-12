@@ -301,12 +301,12 @@
         const savedDbs = localStorage.getItem('firex_dbs');
         if(savedDbs) { try { databases = { ...databases, ...JSON.parse(savedDbs) }; } catch(e){} }
 
-        let memoryCache = {}; // RAM Cache for instant loading
+        let memoryCache = {}; 
         let allDevices = []; 
         let currentFilter = 'All';
         let currentDbFilter = 'nnnnnn'; 
         let activeDevice = null;
-        let isFetching = false;
+        let currentFetchSession = 0; // To handle concurrent fetch cancellation
 
         function initDropdown() {
             const select = document.getElementById('dbFilterSelect');
@@ -374,28 +374,44 @@
         }
 
         async function fetchData() {
-            if (isFetching) return;
-            isFetching = true;
+            currentFetchSession++;
+            const session = currentFetchSession;
             
-            let deviceMap = {};
             const btn = document.getElementById('refreshBtn');
             if(btn) btn.classList.add('loading');
             
+            let deviceMap = {};
+            
             if (currentDbFilter !== 'ALL') {
+                // SINGLE DB FETCH
+                document.getElementById('deviceGrid').innerHTML = `<div class="empty-state">⏳ Loading <b>${currentDbFilter}</b>...</div>`;
+                
                 if (memoryCache[currentDbFilter]) {
+                    if (memoryCache[currentDbFilter] === "EMPTY") {
+                        document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-yellow)">📭 Database '<b>${currentDbFilter}</b>' is empty.</div>`;
+                        if(btn) btn.classList.remove('loading');
+                        return;
+                    }
+                    if (memoryCache[currentDbFilter] === "ERROR") {
+                        document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-red)">🔒 Database '<b>${currentDbFilter}</b>' is locked/deactivated.</div>`;
+                        if(btn) btn.classList.remove('loading');
+                        return;
+                    }
+                    
                     processNode(memoryCache[currentDbFilter], deviceMap, currentDbFilter, null, "root");
                     allDevices = Object.values(deviceMap);
                     applyFilters();
-                } else {
-                    document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fetching data...</div>';
                 }
 
                 try {
                     const url = databases[currentDbFilter];
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 4000); 
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); 
                     const res = await fetch(`${url}/.json`, { signal: controller.signal });
                     clearTimeout(timeoutId);
+                    
+                    if (session !== currentFetchSession) return; // Aborted if user changed selection
+                    
                     if (res.ok) {
                         const data = await res.json();
                         if (data) {
@@ -404,49 +420,90 @@
                             processNode(data, deviceMap, currentDbFilter, null, "root");
                             allDevices = Object.values(deviceMap);
                             applyFilters();
+                            if (allDevices.length === 0) {
+                                document.getElementById('deviceGrid').innerHTML = `<div class="empty-state">No valid devices found in '<b>${currentDbFilter}</b>'.</div>`;
+                            }
+                        } else {
+                            memoryCache[currentDbFilter] = "EMPTY";
+                            document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-yellow)">📭 Database '<b>${currentDbFilter}</b>' is empty.</div>`;
+                            document.getElementById('stat-total').innerText = "0";
                         }
+                    } else {
+                        memoryCache[currentDbFilter] = "ERROR";
+                        document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-red)">🔒 Database '<b>${currentDbFilter}</b>' is locked/deactivated.</div>`;
+                        document.getElementById('stat-total').innerText = "0";
                     }
-                } catch(e) {}
-
+                } catch(e) {
+                    if (session === currentFetchSession) {
+                        memoryCache[currentDbFilter] = "ERROR";
+                        document.getElementById('deviceGrid').innerHTML = `<div class="empty-state" style="color:var(--accent-red)">🔒 Failed to load '<b>${currentDbFilter}</b>' (Timeout/Locked).</div>`;
+                    }
+                }
             } else {
-                document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fetching all databases (Smooth mode)...</div>';
-                let dbsToFetch = Object.entries(databases);
+                // ALL DB FETCH
+                document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fast fetching all databases...</div>';
+                const entries = Object.entries(databases);
+                let completed = 0;
                 
-                for (let i = 0; i < dbsToFetch.length; i += 3) {
-                    const batch = dbsToFetch.slice(i, i + 3);
-                    
-                    await Promise.all(batch.map(async ([name, url]) => {
-                        if (memoryCache[name]) {
-                            processNode(memoryCache[name], deviceMap, name, null, "root");
-                            return;
+                // Concurrent Worker Pool
+                const limit = 15; // Fetch 15 at a time for speed
+                const queue = [...entries];
+                
+                const worker = async () => {
+                    while (queue.length > 0) {
+                        if (session !== currentFetchSession) return;
+                        const [name, url] = queue.shift();
+                        
+                        if (!memoryCache[name] || memoryCache[name] === "ERROR") {
+                            try {
+                                const controller = new AbortController();
+                                const timeoutId = setTimeout(() => controller.abort(), 4000); 
+                                const res = await fetch(`${url}/.json`, { signal: controller.signal });
+                                clearTimeout(timeoutId);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    memoryCache[name] = data || "EMPTY"; 
+                                } else {
+                                    memoryCache[name] = "ERROR";
+                                }
+                            } catch (err) {
+                                memoryCache[name] = "ERROR";
+                            }
                         }
                         
-                        try {
-                            const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 3000); 
-                            const res = await fetch(`${url}/.json`, { signal: controller.signal });
-                            clearTimeout(timeoutId);
-                            if (res.ok) {
-                                const data = await res.json();
-                                if(data) {
-                                    memoryCache[name] = data; 
-                                    processNode(data, deviceMap, name, null, "root");
-                                }
-                            }
-                        } catch (err) {}
-                    }));
-                    
+                        const cached = memoryCache[name];
+                        if (cached !== "EMPTY" && cached !== "ERROR" && cached !== null) {
+                            processNode(cached, deviceMap, name, null, "root");
+                        }
+                        
+                        completed++;
+                        // Update UI at the end or every 20 DBs
+                        if (completed === entries.length || completed % 20 === 0) {
+                            if (session !== currentFetchSession) return;
+                            allDevices = Object.values(deviceMap);
+                            applyFilters();
+                        }
+                    }
+                };
+                
+                const workers = [];
+                for (let i = 0; i < Math.min(limit, entries.length); i++) {
+                    workers.push(worker());
+                }
+                await Promise.all(workers);
+                
+                if (session === currentFetchSession) {
                     allDevices = Object.values(deviceMap);
                     applyFilters();
-                    await new Promise(r => setTimeout(r, 50)); 
+                    if (allDevices.length === 0) {
+                        document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">No valid devices found across any database.</div>';
+                    }
                 }
             }
-
-            if(btn) btn.classList.remove('loading');
-            isFetching = false;
+            
+            if(btn && session === currentFetchSession) btn.classList.remove('loading');
         }
 
-        // Specific device refresh function
         async function refreshActiveDevice() {
             if (!activeDevice) return;
             
@@ -461,6 +518,7 @@
             }
 
             try {
+                delete memoryCache[dbName]; // Force re-fetch
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 4000); 
                 const res = await fetch(`${dbUrl}/.json`, { signal: controller.signal });
@@ -470,34 +528,44 @@
                     const data = await res.json();
                     if (data) {
                         memoryCache[dbName] = data;
-                        
                         let deviceMap = {};
                         processNode(data, deviceMap, dbName, null, "root");
                         
                         if (deviceMap[deviceId]) {
                             activeDevice = deviceMap[deviceId];
-                            
-                            // Update header info
                             document.getElementById('panel-batt').innerText = activeDevice.battery + "%";
                             
-                            // Re-render current tab
                             const activeTabElement = document.querySelector('.p-tab.active');
                             if (activeTabElement) {
                                 const activeTab = activeTabElement.id.replace('tab-', '');
                                 switchTab(activeTab);
                             }
-                            
-                            // Update main grid in background
-                            allDevices = Object.values(deviceMap);
+                            // Update background grid
+                            if (currentDbFilter === 'ALL') {
+                                allDevices = Object.values(deviceMap); // might be partial if ALL mode
+                            } else {
+                                allDevices = Object.values(deviceMap);
+                            }
                             applyFilters();
                         } else {
-                            alert("Device data no longer exists in the database.");
+                            alert("Device no longer exists in the database.");
                             closePanel();
                         }
+                    } else {
+                        memoryCache[dbName] = "EMPTY";
+                        alert("Database is now empty.");
+                        closePanel();
                     }
+                } else {
+                    memoryCache[dbName] = "ERROR";
                 }
             } catch (e) {
                 console.error("Refresh failed", e);
+            } finally {
+                if (btn) {
+                    btn.innerHTML = "🔄 Refresh";
+                    btn.disabled = false;
+                }
             }
         }
 
@@ -621,6 +689,16 @@
 
         function renderUI(devicesToRender) {
             const grid = document.getElementById('deviceGrid');
+            
+            // Don't overwrite if showing empty/error state for single DB
+            if (devicesToRender.length === 0) {
+                if (currentDbFilter === 'ALL') {
+                    grid.innerHTML = '<div class="empty-state">No valid devices found across all databases.</div>';
+                }
+                // For single DB, it's already handled in fetchData
+                return;
+            }
+            
             grid.innerHTML = '';
 
             let onlineCount = 0, offlineCount = 0, bankSmsTotal = 0, cardCount = 0;
@@ -635,13 +713,6 @@
             document.getElementById('stat-offline').innerText = offlineCount;
             document.getElementById('stat-bank').innerText = bankSmsTotal;
             document.getElementById('stat-cards').innerText = cardCount;
-
-            if (devicesToRender.length === 0) {
-                if (!isFetching) {
-                    grid.innerHTML = '<div class="empty-state">No valid devices found in this database.</div>';
-                }
-                return;
-            }
 
             devicesToRender.forEach(device => {
                 let battColor = 'var(--accent-green)';
@@ -728,8 +799,10 @@
 
         function setDbFilter(val) {
             currentDbFilter = val;
-            document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Loading...</div>';
             allDevices = [];
+            document.getElementById('stat-total').innerText = "0";
+            document.getElementById('stat-online').innerText = "0";
+            document.getElementById('stat-offline').innerText = "0";
             fetchData();
         }
 
@@ -793,7 +866,6 @@
                         <button id="panelRefreshBtn" onclick="refreshActiveDevice()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-main); padding:6px 12px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
                     </div>`;
                 } else {
-                    // YAHAN BUTTON ADD KIYA HAI
                     content.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; padding:0 5px;">
                         <span>Last 60 messages · auto-refreshes</span>
                         <button id="panelRefreshBtn" onclick="refreshActiveDevice()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-main); padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:4px;">
