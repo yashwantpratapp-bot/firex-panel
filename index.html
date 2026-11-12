@@ -166,7 +166,7 @@
     </div>
 
     <div class="grid-container" id="deviceGrid">
-        <div class="empty-state">⏳ Loading databases...</div>
+        <div class="empty-state">⏳ Loading data...</div>
     </div>
 
     <div class="overlay" id="overlay" onclick="closePanel()"></div>
@@ -209,6 +209,7 @@
     </div>
 
     <script>
+        // Saare databases yahan hain
         let databases = {
             "nnnnnn": "https://nnnnnn-fab6a-default-rtdb.firebaseio.com",
             "maaytmi": "https://maaytmi-default-rtdb.firebaseio.com",
@@ -299,13 +300,14 @@
         };
 
         const savedDbs = localStorage.getItem('firex_dbs');
-        if(savedDbs) { 
-            try { databases = { ...databases, ...JSON.parse(savedDbs) }; } catch(e){} 
-        }
+        if(savedDbs) { try { databases = { ...databases, ...JSON.parse(savedDbs) }; } catch(e){} }
+
+        // Yahan hum RAM mein data save karenge (Makhan Speed ke liye)
+        let memoryCache = {}; 
 
         let allDevices = []; 
         let currentFilter = 'All';
-        let currentDbFilter = 'ALL'; 
+        let currentDbFilter = 'nnnnnn'; // Default ek DB load karo
         let activeDevice = null;
         let isFetching = false;
 
@@ -374,6 +376,7 @@
             return phone;
         }
 
+        // --- MAKHAN FETCH LOGIC ---
         async function fetchData() {
             if (isFetching) return;
             isFetching = true;
@@ -382,52 +385,76 @@
             const btn = document.getElementById('refreshBtn');
             if(btn) btn.classList.add('loading');
             
-            // 1. Try fetching from Backend API first (Passing DB name)
-            try {
-                const query = currentDbFilter === 'ALL' ? '' : `?db=${currentDbFilter}`;
-                const res = await fetch(`/api/data${query}`);
-                if (res.ok) {
-                    const mergedData = await res.json();
-                    for (const [name, data] of Object.entries(mergedData)) {
-                        processNode(data, deviceMap, name, null, "root");
-                    }
+            // Agar specific database select hai
+            if (currentDbFilter !== 'ALL') {
+                // Pehle memory cache se load karo (Instant 0ms)
+                if (memoryCache[currentDbFilter]) {
+                    processNode(memoryCache[currentDbFilter], deviceMap, currentDbFilter, null, "root");
+                    allDevices = Object.values(deviceMap);
+                    applyFilters();
+                } else {
+                    document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fetching data...</div>';
                 }
-            } catch (e) {
-                console.log("API failed or not found, using direct fallback.");
-            }
 
-            // 2. If "ALL" is selected but backend didn't return everything, fetch directly
-            if (currentDbFilter === 'ALL') {
+                // Phir background mein fresh data laao
+                try {
+                    const url = databases[currentDbFilter];
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 4000); 
+                    const res = await fetch(`${url}/.json`, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data) {
+                            memoryCache[currentDbFilter] = data; // Cache update
+                            deviceMap = {}; // Naya map banao
+                            processNode(data, deviceMap, currentDbFilter, null, "root");
+                            allDevices = Object.values(deviceMap);
+                            applyFilters();
+                        }
+                    }
+                } catch(e) {}
+
+            } 
+            // Agar ALL select hai
+            else {
+                document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fetching all databases (Makhan mode)...</div>';
                 let dbsToFetch = Object.entries(databases);
-                const batchSize = 5; // Fetch 5 at a time
                 
-                for (let i = 0; i < dbsToFetch.length; i += batchSize) {
-                    const batch = dbsToFetch.slice(i, i + batchSize);
+                // Ek saath sirf 3 databases fetch karo
+                for (let i = 0; i < dbsToFetch.length; i += 3) {
+                    const batch = dbsToFetch.slice(i, i + 3);
+                    
                     await Promise.all(batch.map(async ([name, url]) => {
-                        // Skip if already fetched by backend
-                        if (Object.keys(deviceMap).some(k => deviceMap[k].dbSource === name)) return;
+                        // Agar cache mein hai, direct load karo
+                        if (memoryCache[name]) {
+                            processNode(memoryCache[name], deviceMap, name, null, "root");
+                            return;
+                        }
                         
+                        // Warna naya fetch karo
                         try {
                             const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 2500); 
+                            const timeoutId = setTimeout(() => controller.abort(), 3000); 
                             const res = await fetch(`${url}/.json`, { signal: controller.signal });
                             clearTimeout(timeoutId);
                             if (res.ok) {
                                 const data = await res.json();
-                                if(data) processNode(data, deviceMap, name, null, "root");
+                                if(data) {
+                                    memoryCache[name] = data; // Cache update
+                                    processNode(data, deviceMap, name, null, "root");
+                                }
                             }
                         } catch (err) {}
                     }));
                     
                     allDevices = Object.values(deviceMap);
                     applyFilters();
-                    await new Promise(r => setTimeout(r, 10)); // Give UI time to breathe
+                    // UI ko breathe karne do (hang na ho)
+                    await new Promise(r => setTimeout(r, 50)); 
                 }
             }
 
-            allDevices = Object.values(deviceMap);
-            applyFilters();
-            
             if(btn) btn.classList.remove('loading');
             isFetching = false;
         }
@@ -762,6 +789,7 @@
         }
 
         async function manualRefresh() {
+            memoryCache = {}; // Clear cache on manual refresh
             await fetchData();
         }
 
