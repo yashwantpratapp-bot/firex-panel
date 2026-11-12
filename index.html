@@ -159,7 +159,7 @@
                 <option value="newest">Newest</option>
                 <option value="oldest">Oldest</option>
             </select>
-            <button class="refresh-icon" id="refreshBtn" onclick="manualRefresh()" title="Refresh Data">
+            <button class="refresh-icon" id="refreshBtn" onclick="manualRefresh()" title="Refresh All Data">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
             </button>
         </div>
@@ -209,7 +209,6 @@
     </div>
 
     <script>
-        // Saare databases yahan hain
         let databases = {
             "nnnnnn": "https://nnnnnn-fab6a-default-rtdb.firebaseio.com",
             "maaytmi": "https://maaytmi-default-rtdb.firebaseio.com",
@@ -302,12 +301,10 @@
         const savedDbs = localStorage.getItem('firex_dbs');
         if(savedDbs) { try { databases = { ...databases, ...JSON.parse(savedDbs) }; } catch(e){} }
 
-        // Yahan hum RAM mein data save karenge (Makhan Speed ke liye)
-        let memoryCache = {}; 
-
+        let memoryCache = {}; // RAM Cache for instant loading
         let allDevices = []; 
         let currentFilter = 'All';
-        let currentDbFilter = 'nnnnnn'; // Default ek DB load karo
+        let currentDbFilter = 'nnnnnn'; 
         let activeDevice = null;
         let isFetching = false;
 
@@ -376,7 +373,6 @@
             return phone;
         }
 
-        // --- MAKHAN FETCH LOGIC ---
         async function fetchData() {
             if (isFetching) return;
             isFetching = true;
@@ -385,9 +381,7 @@
             const btn = document.getElementById('refreshBtn');
             if(btn) btn.classList.add('loading');
             
-            // Agar specific database select hai
             if (currentDbFilter !== 'ALL') {
-                // Pehle memory cache se load karo (Instant 0ms)
                 if (memoryCache[currentDbFilter]) {
                     processNode(memoryCache[currentDbFilter], deviceMap, currentDbFilter, null, "root");
                     allDevices = Object.values(deviceMap);
@@ -396,7 +390,6 @@
                     document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fetching data...</div>';
                 }
 
-                // Phir background mein fresh data laao
                 try {
                     const url = databases[currentDbFilter];
                     const controller = new AbortController();
@@ -406,8 +399,8 @@
                     if (res.ok) {
                         const data = await res.json();
                         if (data) {
-                            memoryCache[currentDbFilter] = data; // Cache update
-                            deviceMap = {}; // Naya map banao
+                            memoryCache[currentDbFilter] = data; 
+                            deviceMap = {}; 
                             processNode(data, deviceMap, currentDbFilter, null, "root");
                             allDevices = Object.values(deviceMap);
                             applyFilters();
@@ -415,24 +408,19 @@
                     }
                 } catch(e) {}
 
-            } 
-            // Agar ALL select hai
-            else {
-                document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fetching all databases (Makhan mode)...</div>';
+            } else {
+                document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Fetching all databases (Smooth mode)...</div>';
                 let dbsToFetch = Object.entries(databases);
                 
-                // Ek saath sirf 3 databases fetch karo
                 for (let i = 0; i < dbsToFetch.length; i += 3) {
                     const batch = dbsToFetch.slice(i, i + 3);
                     
                     await Promise.all(batch.map(async ([name, url]) => {
-                        // Agar cache mein hai, direct load karo
                         if (memoryCache[name]) {
                             processNode(memoryCache[name], deviceMap, name, null, "root");
                             return;
                         }
                         
-                        // Warna naya fetch karo
                         try {
                             const controller = new AbortController();
                             const timeoutId = setTimeout(() => controller.abort(), 3000); 
@@ -441,7 +429,7 @@
                             if (res.ok) {
                                 const data = await res.json();
                                 if(data) {
-                                    memoryCache[name] = data; // Cache update
+                                    memoryCache[name] = data; 
                                     processNode(data, deviceMap, name, null, "root");
                                 }
                             }
@@ -450,13 +438,67 @@
                     
                     allDevices = Object.values(deviceMap);
                     applyFilters();
-                    // UI ko breathe karne do (hang na ho)
                     await new Promise(r => setTimeout(r, 50)); 
                 }
             }
 
             if(btn) btn.classList.remove('loading');
             isFetching = false;
+        }
+
+        // Specific device refresh function
+        async function refreshActiveDevice() {
+            if (!activeDevice) return;
+            
+            const dbName = activeDevice.dbSource;
+            const dbUrl = databases[dbName];
+            const deviceId = activeDevice.id;
+
+            const btn = document.getElementById('panelRefreshBtn');
+            if (btn) {
+                btn.innerHTML = "⏳...";
+                btn.disabled = true;
+            }
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000); 
+                const res = await fetch(`${dbUrl}/.json`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        memoryCache[dbName] = data;
+                        
+                        let deviceMap = {};
+                        processNode(data, deviceMap, dbName, null, "root");
+                        
+                        if (deviceMap[deviceId]) {
+                            activeDevice = deviceMap[deviceId];
+                            
+                            // Update header info
+                            document.getElementById('panel-batt').innerText = activeDevice.battery + "%";
+                            
+                            // Re-render current tab
+                            const activeTabElement = document.querySelector('.p-tab.active');
+                            if (activeTabElement) {
+                                const activeTab = activeTabElement.id.replace('tab-', '');
+                                switchTab(activeTab);
+                            }
+                            
+                            // Update main grid in background
+                            allDevices = Object.values(deviceMap);
+                            applyFilters();
+                        } else {
+                            alert("Device data no longer exists in the database.");
+                            closePanel();
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Refresh failed", e);
+            }
         }
 
         function processNode(node, deviceMap, dbName, currentDevice = null, keyName = '') {
@@ -747,9 +789,17 @@
                 msgsToShow.sort((a,b) => (b.rawTime || 0) - (a.rawTime || 0));
 
                 if (msgsToShow.length === 0) {
-                    content.innerHTML = '<div class="empty-state">No messages found.</div>';
+                    content.innerHTML = `<div class="empty-state">No messages found.<br><br>
+                        <button id="panelRefreshBtn" onclick="refreshActiveDevice()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-main); padding:6px 12px; border-radius:6px; cursor:pointer;">🔄 Refresh</button>
+                    </div>`;
                 } else {
-                    content.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:15px; display:flex; justify-content:space-between; padding:0 5px;"><span>Last 60 messages · auto-refreshes</span><span>🔄</span></div>`;
+                    // YAHAN BUTTON ADD KIYA HAI
+                    content.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; padding:0 5px;">
+                        <span>Last 60 messages · auto-refreshes</span>
+                        <button id="panelRefreshBtn" onclick="refreshActiveDevice()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-main); padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.75rem; display:flex; align-items:center; gap:4px;">
+                            🔄 Refresh
+                        </button>
+                    </div>`;
                     
                     msgsToShow.forEach(msg => {
                         const senderClass = msg.isBank ? 'bank-sender' : '';
@@ -789,7 +839,7 @@
         }
 
         async function manualRefresh() {
-            memoryCache = {}; // Clear cache on manual refresh
+            memoryCache = {}; 
             await fetchData();
         }
 
@@ -850,7 +900,6 @@
             }
         }
 
-        // Initialize App
         initDropdown();
         fetchData();
     </script>
