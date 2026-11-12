@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS allow karo taaki frontend access kar sake
   res.setHeader('Access-Control-Allow-Credentials', true)
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
@@ -9,7 +8,8 @@ export default async function handler(req, res) {
     return
   }
 
-  // Yahan saare databases ki list hai
+  const { db } = req.query; // Frontend se database ka naam aayega
+
   const databases = {
       "nnnnnn": "https://nnnnnn-fab6a-default-rtdb.firebaseio.com",
       "maaytmi": "https://maaytmi-default-rtdb.firebaseio.com",
@@ -100,23 +100,38 @@ export default async function handler(req, res) {
   };
 
   const results = {};
-  
-  // Server pe saara data parallel fetch karo (Bahut fast hota hai)
-  await Promise.all(Object.entries(databases).map(async ([name, url]) => {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const response = await fetch(`${url}/.json`, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data) results[name] = data;
-      }
-    } catch (e) {
-      // Ignore locked/deactivated databases
+
+  // Agar frontend ne koi specific DB manga hai
+  if (db && db !== 'ALL') {
+    if (databases[db]) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000); 
+        const response = await fetch(`${databases[db]}/.json`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (response.ok) {
+          const data = await response.json();
+          if (data) results[db] = data;
+        }
+      } catch (e) {}
     }
-  }));
+  } 
+  // Agar "ALL" manga hai, toh hum sirf top 10 databases fetch karke bhejenge taaki memory crash na ho
+  else {
+    const entries = Object.entries(databases).slice(0, 10); 
+    await Promise.all(entries.map(async ([name, url]) => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const response = await fetch(`${url}/.json`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (response.ok) {
+          const data = await response.json();
+          if (data) results[name] = data;
+        }
+      } catch (e) {}
+    }));
+  }
 
   res.status(200).json(results);
 }

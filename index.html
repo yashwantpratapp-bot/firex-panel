@@ -209,7 +209,6 @@
     </div>
 
     <script>
-        // --- SAARE DATABASES YAHAN ADD HAIN ---
         let databases = {
             "nnnnnn": "https://nnnnnn-fab6a-default-rtdb.firebaseio.com",
             "maaytmi": "https://maaytmi-default-rtdb.firebaseio.com",
@@ -299,7 +298,6 @@
             "krishna": "https://krishna5454-94fc5-default-rtdb.firebaseio.com"
         };
 
-        // Local storage se custom added DBs fetch karo
         const savedDbs = localStorage.getItem('firex_dbs');
         if(savedDbs) { 
             try { databases = { ...databases, ...JSON.parse(savedDbs) }; } catch(e){} 
@@ -311,18 +309,15 @@
         let activeDevice = null;
         let isFetching = false;
 
-        // Dropdown Initialize karo (Saare DBs ke saath)
         function initDropdown() {
             const select = document.getElementById('dbFilterSelect');
             select.innerHTML = '<option value="ALL">🌐 All Databases</option>';
-            
             Object.keys(databases).sort().forEach(dbName => {
                 const option = document.createElement('option');
                 option.value = dbName;
                 option.innerText = `📁 ${dbName}`;
                 select.appendChild(option);
             });
-            
             select.value = currentDbFilter;
         }
 
@@ -387,45 +382,46 @@
             const btn = document.getElementById('refreshBtn');
             if(btn) btn.classList.add('loading');
             
-            // API se fetch karne ki koshish karo
+            // 1. Try fetching from Backend API first (Passing DB name)
             try {
-                const res = await fetch('/api/data');
-                if (!res.ok) throw new Error("API not ready");
-                const mergedData = await res.json();
-                
-                for (const [name, data] of Object.entries(mergedData)) {
-                    if (currentDbFilter === 'ALL' || currentDbFilter === name) {
+                const query = currentDbFilter === 'ALL' ? '' : `?db=${currentDbFilter}`;
+                const res = await fetch(`/api/data${query}`);
+                if (res.ok) {
+                    const mergedData = await res.json();
+                    for (const [name, data] of Object.entries(mergedData)) {
                         processNode(data, deviceMap, name, null, "root");
                     }
                 }
             } catch (e) {
-                // Fallback (Agar local pe chala rahe ho ya API fail ho jaye)
-                console.log("Backend API nahi mili, direct fetch ho raha hai...");
-                let dbsToFetch = [];
-                if (currentDbFilter === 'ALL') {
-                    dbsToFetch = Object.entries(databases);
-                } else if (databases[currentDbFilter]) {
-                    dbsToFetch = [[currentDbFilter, databases[currentDbFilter]]];
-                }
+                console.log("API failed or not found, using direct fallback.");
+            }
 
-                for (let i = 0; i < dbsToFetch.length; i++) {
-                    const [name, url] = dbsToFetch[i];
-                    try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 3000); 
-                        const res = await fetch(`${url}/.json`, { signal: controller.signal });
-                        clearTimeout(timeoutId);
-                        if (res.ok) {
-                            const data = await res.json();
-                            if(data) processNode(data, deviceMap, name, null, "root");
-                        }
-                    } catch (err) {}
+            // 2. If "ALL" is selected but backend didn't return everything, fetch directly
+            if (currentDbFilter === 'ALL') {
+                let dbsToFetch = Object.entries(databases);
+                const batchSize = 5; // Fetch 5 at a time
+                
+                for (let i = 0; i < dbsToFetch.length; i += batchSize) {
+                    const batch = dbsToFetch.slice(i, i + batchSize);
+                    await Promise.all(batch.map(async ([name, url]) => {
+                        // Skip if already fetched by backend
+                        if (Object.keys(deviceMap).some(k => deviceMap[k].dbSource === name)) return;
+                        
+                        try {
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 2500); 
+                            const res = await fetch(`${url}/.json`, { signal: controller.signal });
+                            clearTimeout(timeoutId);
+                            if (res.ok) {
+                                const data = await res.json();
+                                if(data) processNode(data, deviceMap, name, null, "root");
+                            }
+                        } catch (err) {}
+                    }));
                     
-                    if (currentDbFilter === 'ALL' && i % 5 === 0) {
-                        allDevices = Object.values(deviceMap);
-                        applyFilters();
-                        await new Promise(r => setTimeout(r, 10)); 
-                    }
+                    allDevices = Object.values(deviceMap);
+                    applyFilters();
+                    await new Promise(r => setTimeout(r, 10)); // Give UI time to breathe
                 }
             }
 
